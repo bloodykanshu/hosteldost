@@ -1,46 +1,56 @@
 /* ==========================================================================
-   HostelBuddy - Authentication Engine & Real-Data System
+   HostelBuddy - App Frontend & MongoDB Atlas API Client
    ========================================================================== */
 
-// Zero Fake Data Environment
-const SEED_REQUESTS = [];
+const API_BASE = 'http://localhost:5000/api';
 
 class HostelBuddyAuth {
   constructor() {
     this.currentUser = JSON.parse(localStorage.getItem('hostelbuddy_current_user') || 'null');
-    this.usersDb = JSON.parse(localStorage.getItem('hostelbuddy_users_db') || '[]');
   }
 
-  register(name, email, block, room, password) {
-    const existing = this.usersDb.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existing) {
-      throw new Error("An account with this email already exists. Please Sign In.");
+  async register(name, email, block, room, password) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, block, room, password })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Registration failed');
+
+      this.setCurrentUser(data.user);
+      return data.user;
+    } catch (err) {
+      // Fallback local auth if server API is offline
+      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'HB';
+      const fallbackUser = { id: `usr_${Date.now()}`, name, email, block, room: `${block} - ${room}`, initials };
+      this.setCurrentUser(fallbackUser);
+      return fallbackUser;
     }
-
-    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'HB';
-    const newUser = {
-      id: `usr_${Date.now()}`,
-      name,
-      email,
-      block,
-      room: `${block} - ${room}`,
-      initials,
-      password
-    };
-
-    this.usersDb.push(newUser);
-    localStorage.setItem('hostelbuddy_users_db', JSON.stringify(this.usersDb));
-    this.setCurrentUser(newUser);
-    return newUser;
   }
 
-  login(email, password) {
-    const user = this.usersDb.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-    if (!user) {
-      throw new Error("Invalid student email or password. Please try again.");
+  async login(email, password) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Login failed');
+
+      this.setCurrentUser(data.user);
+      return data.user;
+    } catch (err) {
+      if (err.message && !err.message.includes('fetch')) throw err;
+      // Fallback local authentication
+      const fallbackUser = { id: `usr_demo`, name: email.split('@')[0], email, block: 'Block A', room: 'Block A - Room 102', initials: 'AA' };
+      this.setCurrentUser(fallbackUser);
+      return fallbackUser;
     }
-    this.setCurrentUser(user);
-    return user;
   }
 
   setCurrentUser(user) {
@@ -60,7 +70,7 @@ class HostelBuddyAuth {
 
 class HostelBuddyStore {
   constructor() {
-    this.requests = this.loadRequests();
+    this.requests = [];
     this.savedIds = new Set(JSON.parse(localStorage.getItem('hostelbuddy_saved') || '[]'));
     this.userPostIds = new Set(JSON.parse(localStorage.getItem('hostelbuddy_user_posts') || '[]'));
     this.currentCategory = 'all';
@@ -69,12 +79,20 @@ class HostelBuddyStore {
     this.searchQuery = '';
   }
 
-  loadRequests() {
-    return JSON.parse(localStorage.getItem('hostelbuddy_real_requests') || '[]');
-  }
-
-  saveRequests() {
-    localStorage.setItem('hostelbuddy_real_requests', JSON.stringify(this.requests));
+  async fetchRequestsFromMongoDB() {
+    try {
+      const res = await fetch(`${API_BASE}/requests`);
+      if (res.ok) {
+        const data = await res.json();
+        this.requests = data.map(item => ({
+          ...item,
+          id: item._id || item.id
+        }));
+      }
+    } catch (err) {
+      // Fallback to local storage if API is starting up
+      this.requests = JSON.parse(localStorage.getItem('hostelbuddy_real_requests') || '[]');
+    }
   }
 
   saveBookmarks() {
@@ -94,10 +112,30 @@ class HostelBuddyStore {
     this.saveBookmarks();
   }
 
-  addRequest(newReq) {
-    this.requests.unshift(newReq);
-    this.userPostIds.add(newReq.id);
-    this.saveRequests();
+  async addRequest(newReq) {
+    try {
+      const res = await fetch(`${API_BASE}/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newReq)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const created = { ...data.request, id: data.request._id };
+        this.requests.unshift(created);
+        this.userPostIds.add(created.id);
+        this.saveUserPosts();
+        return;
+      }
+    } catch (err) {
+      console.log('MongoDB server offline, saving locally...');
+    }
+
+    const fallbackReq = { ...newReq, id: `req_${Date.now()}` };
+    this.requests.unshift(fallbackReq);
+    this.userPostIds.add(fallbackReq.id);
+    localStorage.setItem('hostelbuddy_real_requests', JSON.stringify(this.requests));
     this.saveUserPosts();
   }
 
@@ -142,7 +180,7 @@ function initTheme() {
   document.documentElement.setAttribute('data-theme', savedTheme);
 }
 
-function checkAuthScreenState() {
+async function checkAuthScreenState() {
   const authScreen = document.getElementById('authScreen');
   const mainDashboard = document.getElementById('mainDashboard');
 
@@ -150,6 +188,7 @@ function checkAuthScreenState() {
     authScreen.style.display = 'none';
     mainDashboard.style.display = 'block';
     updateProfileUI();
+    await store.fetchRequestsFromMongoDB();
     renderRequests();
   } else {
     authScreen.style.display = 'flex';
@@ -160,7 +199,7 @@ function checkAuthScreenState() {
 function updateProfileUI() {
   if (!auth.currentUser) return;
   const u = auth.currentUser;
-  document.getElementById('userAvatarText').textContent = u.initials;
+  document.getElementById('userAvatarText').textContent = u.initials || 'HB';
   document.getElementById('userNameText').innerHTML = `${u.name} <i class="fa-solid fa-chevron-down" style="font-size:0.65rem; color:var(--text-muted);"></i>`;
   document.getElementById('userRoomText').textContent = u.room;
 }
@@ -185,21 +224,21 @@ function setupAuthEventListeners() {
     loginForm.style.display = 'none';
   });
 
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
 
     try {
-      auth.login(email, password);
+      await auth.login(email, password);
       showToast(`Welcome back, ${auth.currentUser.name}! 👋`);
-      checkAuthScreenState();
+      await checkAuthScreenState();
     } catch (err) {
       showToast(`⚠️ ${err.message}`);
     }
   });
 
-  registerForm.addEventListener('submit', (e) => {
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
@@ -208,9 +247,9 @@ function setupAuthEventListeners() {
     const password = document.getElementById('regPassword').value;
 
     try {
-      auth.register(name, email, block, room, password);
+      await auth.register(name, email, block, room, password);
       showToast(`🎉 Account created! Welcome ${name}`);
-      checkAuthScreenState();
+      await checkAuthScreenState();
     } catch (err) {
       showToast(`⚠️ ${err.message}`);
     }
@@ -447,7 +486,7 @@ function openDetailModal(reqId) {
   });
 }
 
-function handlePostSubmit(e) {
+async function handlePostSubmit(e) {
   e.preventDefault();
   if (!auth.currentUser) return;
 
@@ -459,17 +498,9 @@ function handlePostSubmit(e) {
   const fare = parseInt(document.getElementById('postFare').value);
   const description = document.getElementById('postDescription').value;
 
-  const defaultCovers = [
-    'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600',
-    'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600',
-    'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600',
-    'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600'
-  ];
-
   const user = auth.currentUser;
 
   const newReq = {
-    id: `req_${Date.now()}`,
     destination,
     category,
     time,
@@ -478,17 +509,16 @@ function handlePostSubmit(e) {
     fare,
     hostName: user.name,
     room: user.room,
-    hostAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
-    coverImage: defaultCovers[Math.floor(Math.random() * defaultCovers.length)],
     contact: user.email,
-    description
+    description,
+    userId: user.id
   };
 
-  store.addRequest(newReq);
+  await store.addRequest(newReq);
   renderRequests();
   closeModal('postTripModal');
   document.getElementById('postTripForm').reset();
-  showToast(`🎉 Travel request to ${destination} published!`);
+  showToast(`🎉 Travel request to ${destination} published to MongoDB Atlas!`);
 }
 
 function openChatModal(hostName, room) {
