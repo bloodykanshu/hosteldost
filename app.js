@@ -2,7 +2,9 @@
    HostelBuddy - App Frontend & MongoDB Atlas API Client
    ========================================================================== */
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = window.location.origin.includes('localhost')
+  ? 'http://localhost:5000/api'
+  : `${window.location.origin}/api`;
 
 class HostelBuddyAuth {
   constructor() {

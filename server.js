@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
+const path = require('path');
 require('dotenv').config();
 
 const User = require('./models/User');
@@ -13,6 +14,9 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static frontend files (index.html, styles.css, app.js, assets)
+app.use(express.static(__dirname));
 
 // Connect to MongoDB Atlas Cloud Database
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://akanshyadav91_db_user:mnBIKeFHcQ1BU0Zv@akansh.7ur9ofm.mongodb.net/hostelbuddy?retryWrites=true&w=majority&appName=Akansh';
@@ -146,6 +150,11 @@ app.post('/api/requests', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error creating travel request.', error: error.message });
   }
+});
+
+// Fallback to index.html for non-API web pages
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Start Server
