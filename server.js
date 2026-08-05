@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 // Connect to MongoDB Atlas Cloud Database
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://akanshyadav91_db_user:mnBIKeFHcQ1BU0Zv@akansh.7ur9ofm.mongodb.net/hostelbuddy?retryWrites=true&w=majority&appName=Akansh';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://akanshyadav91_db_user:HostelBuddy123@akansh.7ur9ofm.mongodb.net/hostelbuddy?retryWrites=true&w=majority&appName=Akansh';
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('✅ Connected to MongoDB Atlas Cloud Database (Akansh Cluster)!'))
