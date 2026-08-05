@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HostelBuddy - Hostel Companion & Ride Share</title>
+  <meta name="description" content="HostelBuddy - Authenticated travel companion app for hostel students.">
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ==========================================================================
+       AUTHENTICATION GATEWAY SCREEN (Shown if not logged in)
+       ========================================================================== -->
+  <div id="authScreen" class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-brand-logo">
+          <i class="fa-solid fa-user-group"></i>
+        </div>
+        <h2>HostelBuddy</h2>
+        <p>Hostel Outing & Ride Sharing Platform</p>
+      </div>
+
+      <!-- Tab Switchers -->
+      <div class="auth-tabs-toggle">
+        <button class="auth-tab-btn active" id="tabAuthLogin">Sign In</button>
+        <button class="auth-tab-btn" id="tabAuthRegister">Create Account</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm">
+        <div class="form-group-auth">
+          <label><i class="fa-solid fa-envelope"></i> Student Email / ID</label>
+          <input type="text" class="form-input-auth" id="loginEmail" placeholder="e.g. student@hostel.edu" required>
+        </div>
+
+        <div class="form-group-auth">
+          <label><i class="fa-solid fa-lock"></i> Password</label>
+          <input type="password" class="form-input-auth" id="loginPassword" placeholder="Enter your password" required>
+        </div>
+
+        <button type="submit" class="btn-auth-submit">
+          <i class="fa-solid fa-right-to-bracket"></i> Sign In to HostelBuddy
+        </button>
+      </form>
+
+      <!-- REGISTER FORM (Hidden by default) -->
+      <form id="registerForm" style="display: none;">
+        <div class="form-group-auth">
+          <label><i class="fa-solid fa-user"></i> Full Name</label>
+          <input type="text" class="form-input-auth" id="regName" placeholder="e.g. Aalekh Sharma" required>
+        </div>
+
+        <div class="form-group-auth">
+          <label><i class="fa-solid fa-envelope"></i> Student Email</label>
+          <input type="email" class="form-input-auth" id="regEmail" placeholder="e.g. aalekh@hostel.edu" required>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group-auth">
+            <label><i class="fa-solid fa-building"></i> Hostel Block</label>
+            <select class="form-input-auth" id="regBlock" required>
+              <option value="Block A">Block A (Boys)</option>
+              <option value="Block B">Block B (Boys)</option>
+              <option value="Girls Hostel 1">Girls Hostel 1</option>
+              <option value="Girls Hostel 2">Girls Hostel 2</option>
+              <option value="PG Annex">PG Annex</option>
+            </select>
+          </div>
+
+          <div class="form-group-auth">
+            <label><i class="fa-solid fa-door-closed"></i> Room Number</label>
+            <input type="text" class="form-input-auth" id="regRoom" placeholder="e.g. Room 102" required>
+          </div>
+        </div>
+
+        <div class="form-group-auth">
+          <label><i class="fa-solid fa-lock"></i> Password</label>
+          <input type="password" class="form-input-auth" id="regPassword" placeholder="Create password" required>
+        </div>
+
+        <button type="submit" class="btn-auth-submit">
+          <i class="fa-solid fa-user-plus"></i> Create Student Account
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MAIN AUTHENTICATED DASHBOARD (Hidden until logged in)
+       ========================================================================== -->
+  <div id="mainDashboard" style="display: none;">
+
+    <!-- Top Navigation Header -->
+    <header class="site-header">
+      <div class="container nav-wrapper">
+        <div class="brand-group">
+          <div class="brand-logo-icon">
+            <i class="fa-solid fa-user-group"></i>
+          </div>
+          <div class="brand-titles">
+            <span class="brand-title-text">HostelBuddy</span>
+            <span class="brand-subtitle-text">Hostel Companion & Ride Share</span>
+          </div>
+        </div>
+
+        <div class="header-controls">
+          <!-- User Profile Badge (Dynamically populated from login session) -->
+          <div class="user-profile-badge">
+            <div class="user-avatar-circle" id="userAvatarText">AA</div>
+            <div class="user-info-text">
+              <span class="user-info-name" id="userNameText">Aalekh <i class="fa-solid fa-chevron-down" style="font-size:0.65rem; color:var(--text-muted);"></i></span>
+              <span class="user-info-room" id="userRoomText">Block A - Room 102</span>
+            </div>
+          </div>
+
+          <!-- Action Icons -->
+          <button class="icon-btn-round" id="themeToggleBtn" title="Toggle Theme">
+            <i class="fa-solid fa-sun" id="themeIcon"></i>
+          </button>
+          <button class="icon-btn-round" id="safetyBtn" title="Safety Guidelines">
+            <i class="fa-solid fa-shield-halved"></i>
+          </button>
+          <button class="icon-btn-round" id="logoutBtn" title="Log Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+
+          <!-- Primary Action Button -->
+          <button class="btn-primary-purple" id="openPostTripBtn">
+            <i class="fa-solid fa-plus"></i> Going Somewhere?
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+
+      <!-- Hero Banner Card Section -->
+      <section class="hero-banner-card">
+        <div class="hero-left-content">
+          <h1 class="hero-title-text">
+            Never Travel Alone <span>from the Hostel</span>
+          </h1>
+          <p class="hero-subtext">
+            Going for groceries, airport, station, mall, or a late-night bite? Post your plan and pair up with hostel mates going the same way!
+          </p>
+        </div>
+
+        <!-- Right Dashboard Stats Cards -->
+        <div class="hero-stats-grid">
+          <div class="stat-box-card">
+            <div class="stat-icon-wrap stat-icon-blue">
+              <i class="fa-regular fa-clock"></i>
+            </div>
+            <div class="stat-num-value" id="statActiveRequests">0</div>
+            <div class="stat-label-text">Active Requests</div>
+          </div>
+
+          <div class="stat-box-card">
+            <div class="stat-icon-wrap stat-icon-green">
+              <i class="fa-solid fa-user-check"></i>
+            </div>
+            <div class="stat-num-value" id="statBuddiesPaired">0</div>
+            <div class="stat-label-text">Buddies Paired</div>
+          </div>
+
+          <div class="stat-box-card">
+            <div class="stat-icon-wrap stat-icon-purple">
+              <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+            <div class="stat-num-value" id="statFaresSplit">₹0</div>
+            <div class="stat-label-text">Cab Fares Split</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filter Panel Section -->
+      <section class="filter-panel-card">
+        <!-- Sub-Nav Tabs -->
+        <div class="subnav-tabs-row">
+          <button class="tab-pill-btn active" data-tab="all">
+            <i class="fa-solid fa-border-all"></i> All Travel Requests <span class="tab-badge-count" id="badgeAllCount">0</span>
+          </button>
+          <button class="tab-pill-btn" data-tab="my-posts">
+            <i class="fa-regular fa-user"></i> My Posts & Joined <span class="tab-badge-count" id="badgeMyCount">0</span>
+          </button>
+          <button class="tab-pill-btn" data-tab="leaving-today">
+            <i class="fa-regular fa-clock"></i> Leaving Today
+          </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="search-input-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="searchInput" placeholder="Search destination...">
+        </div>
+
+        <!-- Categories Pills Row -->
+        <div class="filter-row-label">CATEGORY:</div>
+        <div class="categories-pills-row">
+          <button class="cat-btn-pill active" data-category="all">
+            All Categories
+          </button>
+          <button class="cat-btn-pill" data-category="Transit & Airport">
+            ✈️ Transit & Airport
+          </button>
+          <button class="cat-btn-pill" data-category="Malls & Shopping">
+            🛍️ Malls & Shopping
+          </button>
+          <button class="cat-btn-pill" data-category="Cafes & Food">
+            🍔 Cafes & Food
+          </button>
+          <button class="cat-btn-pill" data-category="Movies & Outing">
+            🎬 Movies & Outing
+          </button>
+          <button class="cat-btn-pill" data-category="College & Exams">
+            📚 College & Exams
+          </button>
+          <button class="cat-btn-pill" data-category="Medical & Urgent">
+            🏥 Medical & Urgent
+          </button>
+        </div>
+
+        <!-- Mode Selector Row -->
+        <div class="mode-select-row">
+          <span class="filter-row-label" style="margin-bottom:0;">MODE:</span>
+          <select class="mode-select-control" id="modeFilter">
+            <option value="all">Any Travel Mode</option>
+            <option value="Cab / Auto Share">🛺 Cab / Auto Share</option>
+            <option value="Bike / Scooty">🛵 Bike / Scooty</option>
+            <option value="Bus / Metro">🚌 Bus / Metro</option>
+            <option value="Walking">🚶 Walking</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Available Travel Companions Section -->
+      <section>
+        <div class="companions-header">
+          <h2>Available Travel Companions</h2>
+          <span class="companions-count-text" id="companionsCountText">0 requests</span>
+        </div>
+
+        <!-- Dynamic Cards Grid (100% Real User Posts Only) -->
+        <div class="trips-grid" id="tripsContainer">
+          <!-- Injected via app.js -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- MODAL: GOING SOMEWHERE? POST FORM -->
+    <div class="modal-overlay" id="postTripModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-plus" style="color: var(--accent-purple);"></i> Post a Travel Request</h3>
+          <button class="close-modal-btn closeModal" data-modal="postTripModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="postTripForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label><i class="fa-solid fa-location-dot"></i> Destination</label>
+                <input type="text" class="form-control" id="postDestination" placeholder="e.g. City Airport or D-Mart Mall" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fa-solid fa-layer-group"></i> Category</label>
+                <select class="form-control" id="postCategory" required>
+                  <option value="Transit & Airport">✈️ Transit & Airport</option>
+                  <option value="Malls & Shopping">🛍️ Malls & Shopping</option>
+                  <option value="Cafes & Food">🍔 Cafes & Food</option>
+                  <option value="Movies & Outing">🎬 Movies & Outing</option>
+                  <option value="College & Exams">📚 College & Exams</option>
+                  <option value="Medical & Urgent">🏥 Medical & Urgent</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label><i class="fa-regular fa-clock"></i> Departure Time</label>
+                <input type="text" class="form-control" id="postTime" placeholder="e.g. Today at 6:30 PM" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fa-solid fa-taxi"></i> Travel Mode</label>
+                <select class="form-control" id="postMode" required>
+                  <option value="Cab / Auto Share">🛺 Cab / Auto Share</option>
+                  <option value="Bike / Scooty">🛵 Bike / Scooty</option>
+                  <option value="Bus / Metro">🚌 Bus / Metro</option>
+                  <option value="Walking">🚶 Walking</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label><i class="fa-solid fa-users"></i> Available Spots</label>
+                <input type="number" class="form-control" id="postSpots" min="1" max="6" value="2" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fa-solid fa-indian-rupee-sign"></i> Estimated Fare / Share (₹)</label>
+                <input type="number" class="form-control" id="postFare" placeholder="e.g. 50" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fa-solid fa-align-left"></i> Description / Note</label>
+              <textarea class="form-control" id="postDescription" rows="2" placeholder="e.g. Booking Uber XL for evening flight. Looking for 2 mates to share..." required></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+              <button type="button" class="btn-secondary closeModal" data-modal="postTripModal">Cancel</button>
+              <button type="submit" class="btn-primary-purple"><i class="fa-solid fa-check"></i> Post Request</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: TRIP DETAILS & JOIN -->
+    <div class="modal-overlay" id="tripDetailModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modalTripTitle">Request Details</h3>
+          <button class="close-modal-btn closeModal" data-modal="tripDetailModal">&times;</button>
+        </div>
+        <div class="modal-body" id="modalTripBody"></div>
+      </div>
+    </div>
+
+    <!-- MODAL: CHAT / PING ROOM -->
+    <div class="modal-overlay" id="chatModal">
+      <div class="modal-card" style="max-width: 480px;">
+        <div class="modal-header">
+          <h3 id="chatHostTitle"><i class="fa-solid fa-comments"></i> Chat with Hostel Mate</h3>
+          <button class="close-modal-btn closeModal" data-modal="chatModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="chat-container">
+            <div class="chat-messages" id="chatMessagesBox"></div>
+            <div class="chat-input-row">
+              <input type="text" id="chatInput" placeholder="Type a message...">
+              <button class="btn-primary-purple" id="sendChatBtn"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- END mainDashboard -->
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
