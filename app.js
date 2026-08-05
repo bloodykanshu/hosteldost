@@ -343,11 +343,11 @@ function setupAuthEventListeners() {
     try {
       currentGeneratedOTP = await auth.sendOTP(phone);
       document.getElementById('otpNoticeNumber').textContent = phone;
-      document.getElementById('inputOTP').value = '';
+      document.getElementById('modalGeneratedOTPDisplay').textContent = currentGeneratedOTP;
+      document.getElementById('inputOTP').value = currentGeneratedOTP; // Auto-fill for convenience
       openModal('otpModal');
 
-      // Simulated SMS Toast Banner
-      showToast(`📱 [SMS Alert] Your HostelBuddy Verification OTP is ${currentGeneratedOTP}`);
+      showToast(`📱 OTP Code Generated: ${currentGeneratedOTP}`);
     } catch (err) {
       showToast(`⚠️ ${err.message}`);
     }
@@ -364,7 +364,7 @@ function setupAuthEventListeners() {
     }
 
     if (inputOTP !== currentGeneratedOTP) {
-      showToast('⚠️ Incorrect OTP Code! Please check the SMS Toast banner.');
+      showToast('⚠️ Incorrect OTP Code!');
       return;
     }
 
