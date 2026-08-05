@@ -15,14 +15,11 @@ app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB Atlas Cloud Database
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hostelbuddy';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://akanshyadav91_db_user:mnBIKeFHcQ1BU0Zv@akansh.7ur9ofm.mongodb.net/hostelbuddy?retryWrites=true&w=majority&appName=Akansh';
 
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB Atlas Cloud Database!'))
-  .catch(err => {
-    console.error('❌ MongoDB Atlas Connection Error:', err.message);
-    console.log('💡 Tip: Please update MONGODB_URI in your .env file with your actual MongoDB Atlas connection string.');
-  });
+  .then(() => console.log('✅ Connected to MongoDB Atlas Cloud Database (Akansh Cluster)!'))
+  .catch(err => console.error('❌ MongoDB Atlas Connection Error:', err.message));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -67,7 +64,7 @@ app.post('/api/auth/register', async (req, res) => {
       initials: newUser.initials
     };
 
-    res.status(201).json({ message: 'Account created successfully!', user: userResponse });
+    res.status(201).json({ message: 'Account created successfully in MongoDB Atlas!', user: userResponse });
   } catch (error) {
     res.status(500).json({ message: 'Server error during registration.', error: error.message });
   }
