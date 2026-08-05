@@ -21,7 +21,7 @@ const requestSchema = new mongoose.Schema({
   spots: {
     type: Number,
     required: true,
-    min: 1
+    min: 0
   },
   fare: {
     type: Number,
@@ -52,9 +52,14 @@ const requestSchema = new mongoose.Schema({
     required: true
   },
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    type: String
   },
+  joinedUsers: [{
+    userId: String,
+    name: String,
+    room: String,
+    joinedAt: { type: Date, default: Date.now }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

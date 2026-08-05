@@ -88,7 +88,8 @@ class HostelBuddyStore {
         const data = await res.json();
         this.requests = data.map(item => ({
           ...item,
-          id: item._id || item.id
+          id: item._id || item.id,
+          joinedUsers: item.joinedUsers || []
         }));
       }
     } catch (err) {
@@ -124,7 +125,7 @@ class HostelBuddyStore {
 
       if (res.ok) {
         const data = await res.json();
-        const created = { ...data.request, id: data.request._id };
+        const created = { ...data.request, id: data.request._id, joinedUsers: [] };
         this.requests.unshift(created);
         this.userPostIds.add(created.id);
         this.saveUserPosts();
@@ -134,11 +135,46 @@ class HostelBuddyStore {
       console.log('MongoDB server offline, saving locally...');
     }
 
-    const fallbackReq = { ...newReq, id: `req_${Date.now()}` };
+    const fallbackReq = { ...newReq, id: `req_${Date.now()}`, joinedUsers: [] };
     this.requests.unshift(fallbackReq);
     this.userPostIds.add(fallbackReq.id);
     localStorage.setItem('hostelbuddy_real_requests', JSON.stringify(this.requests));
     this.saveUserPosts();
+  }
+
+  async joinRequest(reqId, user) {
+    const target = this.requests.find(r => r.id === reqId);
+    if (!target) throw new Error('Request not found');
+
+    if (target.spots <= 0) throw new Error('No remaining spots on this request.');
+
+    const already = (target.joinedUsers || []).some(u => u.userId === user.id || (u.name === user.name && u.room === user.room));
+    if (already) throw new Error('You have already joined this travel request!');
+
+    try {
+      const res = await fetch(`${API_BASE}/requests/${reqId}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, name: user.name, room: user.room })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to join trip');
+
+      // Update local memory
+      target.spots = data.request.spots;
+      target.joinedUsers = data.request.joinedUsers || [];
+      return data.request;
+    } catch (err) {
+      if (err.message && !err.message.includes('fetch')) throw err;
+
+      // Fallback local decrement
+      target.spots = Math.max(0, target.spots - 1);
+      target.joinedUsers = target.joinedUsers || [];
+      target.joinedUsers.push({ userId: user.id, name: user.name, room: user.room, joinedAt: new Date() });
+      localStorage.setItem('hostelbuddy_real_requests', JSON.stringify(this.requests));
+      return target;
+    }
   }
 
   getFilteredRequests() {
@@ -320,7 +356,7 @@ function setupDashboardEventListeners() {
 
 function updateDashboardStats() {
   const activeCount = store.requests.length;
-  const pairedCount = store.userPostIds.size * 2;
+  const pairedCount = store.requests.reduce((sum, r) => sum + (r.joinedUsers ? r.joinedUsers.length : 0), 0);
   const totalFares = store.requests.reduce((sum, r) => sum + (r.fare * r.spots), 0);
 
   document.getElementById('statActiveRequests').textContent = activeCount;
@@ -361,6 +397,13 @@ function renderRequests() {
 
 function createCardHTML(req) {
   const isSaved = store.savedIds.has(req.id);
+  const curUser = auth.currentUser;
+  const joinedList = req.joinedUsers || [];
+  const hasJoined = curUser && joinedList.some(u => u.userId === curUser.id || (u.name === curUser.name && u.room === curUser.room));
+
+  const joinedBadgeHTML = joinedList.length > 0
+    ? `<div style="margin-top:0.5rem; font-size:0.75rem; color:var(--accent-purple); font-weight:700;"><i class="fa-solid fa-user-check"></i> ${joinedList.length} hostel mate(s) joined (${joinedList.map(u => u.name).join(', ')})</div>`
+    : '';
 
   return `
     <article class="companion-card" data-id="${req.id}">
@@ -388,9 +431,13 @@ function createCardHTML(req) {
           <div class="meta-item"><i class="fa-solid fa-taxi"></i> <span>${req.mode}</span></div>
         </div>
 
-        <div class="card-footer">
-          <div class="spots-badge">${req.spots} spots • ₹${req.fare} share</div>
-          <button class="btn-join-card viewDetailBtn" data-id="${req.id}">View & Join</button>
+        ${joinedBadgeHTML}
+
+        <div class="card-footer" style="margin-top:0.75rem;">
+          <div class="spots-badge">${req.spots > 0 ? `${req.spots} spots left` : '🔴 Full'} • ₹${req.fare} share</div>
+          <button class="btn-join-card viewDetailBtn" data-id="${req.id}">
+            ${hasJoined ? '✅ Joined (View)' : 'View & Join'}
+          </button>
         </div>
       </div>
     </article>
@@ -429,8 +476,20 @@ function openDetailModal(reqId) {
 
   const modalTitle = document.getElementById('modalTripTitle');
   const modalBody = document.getElementById('modalTripBody');
+  const curUser = auth.currentUser;
+  const joinedList = req.joinedUsers || [];
+  const hasJoined = curUser && joinedList.some(u => u.userId === curUser.id || (u.name === curUser.name && u.room === curUser.room));
 
   modalTitle.innerHTML = `<i class="fa-solid fa-location-dot" style="color:var(--accent-purple);"></i> ${req.destination}`;
+
+  const joinedBuddiesListHTML = joinedList.length > 0
+    ? `<div style="background:var(--bg-surface); padding:0.85rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1rem;">
+        <h5 style="margin-bottom:0.4rem; color:var(--accent-purple);"><i class="fa-solid fa-users"></i> Joined Companions (${joinedList.length}):</h5>
+        <ul style="padding-left:1.2rem; margin:0; color:var(--text-secondary); font-size:0.88rem;">
+          ${joinedList.map(u => `<li><strong>${u.name}</strong> (${u.room})</li>`).join('')}
+        </ul>
+       </div>`
+    : `<div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;"><i class="fa-solid fa-info-circle"></i> No companions have joined this trip yet.</div>`;
 
   modalBody.innerHTML = `
     <div style="margin-bottom: 1.25rem; position: relative; border-radius: var(--radius-md); overflow: hidden; height: 160px;">
@@ -459,15 +518,19 @@ function openDetailModal(reqId) {
       <p style="color:var(--text-primary); font-size:0.95rem; line-height:1.5;">${req.description}</p>
     </div>
 
+    ${joinedBuddiesListHTML}
+
     <div style="background:var(--bg-surface-elevated); padding:1rem; border-radius:var(--radius-md); margin-bottom:1.5rem; border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
       <span><i class="fa-solid fa-wallet" style="color:var(--accent-purple);"></i> Estimated Share: <strong>₹${req.fare} per person</strong></span>
-      <span class="spots-badge">${req.spots} spots remaining</span>
+      <span class="spots-badge" id="modalSpotsBadge">${req.spots > 0 ? `${req.spots} spots remaining` : '🔴 Full'}</span>
     </div>
 
     <div style="display:flex; gap:1rem; justify-content:flex-end;">
       <button class="btn-secondary closeModal" data-modal="tripDetailModal">Close</button>
       <button class="btn-secondary" id="chatHostFromDetailBtn"><i class="fa-solid fa-comments"></i> Chat Host</button>
-      <button class="btn-primary-purple" id="requestJoinBtn"><i class="fa-solid fa-user-plus"></i> Join Request</button>
+      <button class="btn-primary-purple" id="requestJoinBtn" ${hasJoined || req.spots <= 0 ? 'disabled style="opacity:0.6; cursor:not-allowed;"' : ''}>
+        <i class="fa-solid fa-${hasJoined ? 'check' : 'user-plus'}"></i> ${hasJoined ? 'Already Joined' : req.spots <= 0 ? 'Full' : 'Join Request'}
+      </button>
     </div>
   `;
 
@@ -482,10 +545,19 @@ function openDetailModal(reqId) {
     openChatModal(req.hostName, req.room);
   });
 
-  document.getElementById('requestJoinBtn').addEventListener('click', () => {
-    showToast(`🎉 Join request sent to ${req.hostName} (${req.room})!`);
-    closeModal('tripDetailModal');
-  });
+  const joinBtn = document.getElementById('requestJoinBtn');
+  if (joinBtn && !hasJoined && req.spots > 0) {
+    joinBtn.addEventListener('click', async () => {
+      try {
+        await store.joinRequest(req.id, auth.currentUser);
+        showToast(`🎉 You joined ${req.hostName}'s trip to ${req.destination}!`);
+        closeModal('tripDetailModal');
+        renderRequests();
+      } catch (err) {
+        showToast(`⚠️ ${err.message}`);
+      }
+    });
+  }
 }
 
 async function handlePostSubmit(e) {

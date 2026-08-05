@@ -60,7 +60,7 @@ app.post('/api/auth/register', async (req, res) => {
     await newUser.save();
 
     const userResponse = {
-      id: newUser._id,
+      id: newUser._id.toString(),
       name: newUser.name,
       email: newUser.email,
       block: newUser.block,
@@ -90,7 +90,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const userResponse = {
-      id: user._id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
       block: user.block,
@@ -142,6 +142,7 @@ app.post('/api/requests', async (req, res) => {
       contact,
       description,
       userId: userId || null,
+      joinedUsers: [],
       coverImage: defaultCovers[Math.floor(Math.random() * defaultCovers.length)]
     });
 
@@ -149,6 +150,42 @@ app.post('/api/requests', async (req, res) => {
     res.status(201).json({ message: 'Travel request posted to MongoDB Atlas!', request: newRequest });
   } catch (error) {
     res.status(500).json({ message: 'Error creating travel request.', error: error.message });
+  }
+});
+
+// POST /api/requests/:id/join - Join a trip & decrement available spots in MongoDB Atlas
+app.post('/api/requests/:id/join', async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const { userId, name, room } = req.body;
+
+    const reqItem = await Request.findById(requestId);
+    if (!reqItem) {
+      return res.status(404).json({ message: 'Travel request not found.' });
+    }
+
+    if (reqItem.spots <= 0) {
+      return res.status(400).json({ message: 'Sorry, no spots remaining for this travel request!' });
+    }
+
+    // Check if user already joined
+    const alreadyJoined = reqItem.joinedUsers.some(u => u.userId === userId || (u.name === name && u.room === room));
+    if (alreadyJoined) {
+      return res.status(400).json({ message: 'You have already joined this travel request!' });
+    }
+
+    // Decrement spots by 1 & add to joinedUsers array
+    reqItem.spots -= 1;
+    reqItem.joinedUsers.push({ userId, name, room });
+
+    await reqItem.save();
+
+    res.json({
+      message: `Successfully joined ${reqItem.destination}!`,
+      request: reqItem
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error joining travel request.', error: error.message });
   }
 });
 
