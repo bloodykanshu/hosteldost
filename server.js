@@ -31,7 +31,7 @@ app.get('/api/health', (req, res) => {
 });
 
 /* ==========================================================================
-   AUTH ROUTES
+   AUTH & PROFILE ROUTES
    ========================================================================== */
 
 // POST /api/auth/register
@@ -101,6 +101,29 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({ message: 'Signed in successfully!', user: userResponse });
   } catch (error) {
     res.status(500).json({ message: 'Server error during login.', error: error.message });
+  }
+});
+
+// DELETE /api/auth/profile/:userId - Permanently Delete Account and associated posts/joins
+app.delete('/api/auth/profile/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Delete user document
+    await User.findByIdAndDelete(userId);
+
+    // Delete travel requests created by user
+    await Request.deleteMany({ userId });
+
+    // Remove user from joinedUsers array in all other requests
+    await Request.updateMany(
+      {},
+      { $pull: { joinedUsers: { userId } } }
+    );
+
+    res.json({ message: 'Profile and associated posts deleted permanently from MongoDB Atlas!' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting user profile.', error: error.message });
   }
 });
 

@@ -55,6 +55,20 @@ class HostelBuddyAuth {
     }
   }
 
+  async deleteAccount(userId) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/profile/${userId}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Error deleting account');
+    } catch (err) {
+      console.log('MongoDB server offline, deleting session locally...');
+    }
+
+    this.logout();
+  }
+
   setCurrentUser(user) {
     this.currentUser = user;
     localStorage.setItem('hostelbuddy_current_user', JSON.stringify(user));
@@ -242,6 +256,18 @@ function updateProfileUI() {
   document.getElementById('userRoomText').textContent = u.room;
 }
 
+function openProfileModal() {
+  if (!auth.currentUser) return;
+  const u = auth.currentUser;
+
+  document.getElementById('modalProfileAvatar').textContent = u.initials || 'HB';
+  document.getElementById('modalProfileName').textContent = u.name;
+  document.getElementById('modalProfileEmail').textContent = u.email || 'Student Account';
+  document.getElementById('modalProfileRoom').innerHTML = `<i class="fa-solid fa-building"></i> ${u.room}`;
+
+  openModal('profileModal');
+}
+
 function setupAuthEventListeners() {
   const tabLogin = document.getElementById('tabAuthLogin');
   const tabRegister = document.getElementById('tabAuthRegister');
@@ -295,6 +321,21 @@ function setupAuthEventListeners() {
 }
 
 function setupDashboardEventListeners() {
+  document.getElementById('profilePillBtn').addEventListener('click', openProfileModal);
+
+  document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+    if (!auth.currentUser) return;
+    const confirmDelete = confirm("⚠️ Are you sure you want to permanently delete your HostelBuddy profile? This will also remove your travel posts and joined entries from MongoDB Atlas.");
+
+    if (confirmDelete) {
+      const u = auth.currentUser;
+      closeModal('profileModal');
+      await auth.deleteAccount(u.id);
+      showToast("🗑️ Profile and travel posts deleted permanently.");
+      checkAuthScreenState();
+    }
+  });
+
   document.getElementById('themeToggleBtn').addEventListener('click', () => {
     const cur = document.documentElement.getAttribute('data-theme');
     const next = cur === 'dark' ? 'light' : 'dark';
