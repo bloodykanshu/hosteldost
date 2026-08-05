@@ -18,8 +18,8 @@ const otpStore = new Map();
 app.use(cors());
 app.use(express.json());
 
-// Serve static frontend files (index.html, styles.css, app.js, assets)
-app.use(express.static(__dirname));
+// Serve static frontend files (styles.css, app.js, index.html, assets)
+app.use(express.static(path.join(__dirname)));
 
 // Connect to MongoDB Atlas Cloud Database
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://akanshyadav91_db_user:HostelBuddy123@akansh.7ur9ofm.mongodb.net/hostelbuddy?retryWrites=true&w=majority&appName=Akansh';
@@ -45,17 +45,16 @@ app.post('/api/auth/send-otp', async (req, res) => {
       return res.status(400).json({ message: 'Please enter a valid 10-digit mobile phone number.' });
     }
 
-    // Generate random 4-digit OTP
     const generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
     otpStore.set(phone.trim(), {
       otp: generatedOTP,
-      expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes validity
+      expiresAt: Date.now() + 5 * 60 * 1000
     });
 
     res.json({
       message: `OTP sent successfully to ${phone}!`,
       phone: phone.trim(),
-      otp: generatedOTP // Returned for client simulated SMS toast
+      otp: generatedOTP
     });
   } catch (error) {
     res.status(500).json({ message: 'Error generating OTP.', error: error.message });
@@ -73,7 +72,6 @@ app.post('/api/auth/register', async (req, res) => {
 
     const cleanPhone = phone.trim();
 
-    // Validate OTP if provided
     if (otp) {
       const storedData = otpStore.get(cleanPhone);
       if (!storedData || storedData.otp !== otp.trim()) {
@@ -252,8 +250,17 @@ app.post('/api/requests/:id/join', async (req, res) => {
   }
 });
 
-// Fallback to index.html for non-API web pages
+// Fallback route for non-API web pages
 app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ message: 'API Endpoint Not Found' });
+  }
+
+  // If request is for a static asset file (.css, .js, .png, etc.), return 404 instead of index.html
+  if (path.extname(req.path)) {
+    return res.status(404).send('File not found');
+  }
+
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
