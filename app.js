@@ -6,36 +6,17 @@ const API_BASE = window.location.origin.includes('localhost')
   ? 'http://localhost:5000/api'
   : `${window.location.origin}/api`;
 
-let pendingRegData = null;
-let currentGeneratedOTP = null;
-
 class HostelBuddyAuth {
   constructor() {
     this.currentUser = JSON.parse(localStorage.getItem('hostelbuddy_current_user') || 'null');
   }
 
-  async sendOTP(phone) {
-    try {
-      const res = await fetch(`${API_BASE}/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to send OTP');
-      return data.otp;
-    } catch (err) {
-      // Fallback local OTP generation
-      return Math.floor(1000 + Math.random() * 9000).toString();
-    }
-  }
-
-  async register(name, email, phone, block, room, password, otp) {
+  async register(name, email, phone, block, room, password) {
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, block, room, password, otp })
+        body: JSON.stringify({ name, email, phone, block, room, password })
       });
 
       const data = await res.json();
@@ -294,7 +275,6 @@ function setupAuthEventListeners() {
   const tabRegister = document.getElementById('tabAuthRegister');
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
-  const otpVerifyForm = document.getElementById('otpVerifyForm');
 
   tabLogin.addEventListener('click', () => {
     tabLogin.classList.add('active');
@@ -338,43 +318,9 @@ function setupAuthEventListeners() {
       return;
     }
 
-    pendingRegData = { name, email, phone, block, room, password };
-
     try {
-      currentGeneratedOTP = await auth.sendOTP(phone);
-      document.getElementById('otpNoticeNumber').textContent = phone;
-      document.getElementById('modalGeneratedOTPDisplay').textContent = currentGeneratedOTP;
-      document.getElementById('inputOTP').value = currentGeneratedOTP; // Auto-fill for convenience
-      openModal('otpModal');
-
-      showToast(`📱 OTP Code Generated: ${currentGeneratedOTP}`);
-    } catch (err) {
-      showToast(`⚠️ ${err.message}`);
-    }
-  });
-
-  otpVerifyForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const inputOTP = document.getElementById('inputOTP').value.trim();
-
-    if (!pendingRegData) {
-      showToast('⚠️ Registration session expired. Please try again.');
-      closeModal('otpModal');
-      return;
-    }
-
-    if (inputOTP !== currentGeneratedOTP) {
-      showToast('⚠️ Incorrect OTP Code!');
-      return;
-    }
-
-    try {
-      const { name, email, phone, block, room, password } = pendingRegData;
-      await auth.register(name, email, phone, block, room, password, inputOTP);
-      closeModal('otpModal');
-      showToast(`🎉 Phone Verified & Account Created! Welcome ${name}`);
-      pendingRegData = null;
-      currentGeneratedOTP = null;
+      await auth.register(name, email, phone, block, room, password);
+      showToast(`🎉 Account created! Welcome ${name}`);
       await checkAuthScreenState();
     } catch (err) {
       showToast(`⚠️ ${err.message}`);
@@ -745,5 +691,5 @@ function showToast(message) {
     toast.style.opacity = '0';
     toast.style.transition = 'opacity 0.3s ease';
     setTimeout(() => toast.remove(), 300);
-  }, 4000);
+  }, 3500);
 }

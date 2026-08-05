@@ -11,9 +11,6 @@ const Request = require('./models/Request');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Temporary in-memory OTP store { phone: { otp, expiresAt } }
-const otpStore = new Map();
-
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -34,51 +31,19 @@ app.get('/api/health', (req, res) => {
 });
 
 /* ==========================================================================
-   AUTH & OTP ROUTES
+   AUTH ROUTES
    ========================================================================== */
 
-// POST /api/auth/send-otp - Generate 4-digit verification OTP
-app.post('/api/auth/send-otp', async (req, res) => {
-  try {
-    const { phone } = req.body;
-    if (!phone || phone.trim().length < 10) {
-      return res.status(400).json({ message: 'Please enter a valid 10-digit mobile phone number.' });
-    }
-
-    const generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-    otpStore.set(phone.trim(), {
-      otp: generatedOTP,
-      expiresAt: Date.now() + 5 * 60 * 1000
-    });
-
-    res.json({
-      message: `OTP sent successfully to ${phone}!`,
-      phone: phone.trim(),
-      otp: generatedOTP
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Error generating OTP.', error: error.message });
-  }
-});
-
-// POST /api/auth/register - Register with verified OTP & Phone Number
+// POST /api/auth/register - Direct registration with mandatory Phone Number
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, phone, block, room, password, otp } = req.body;
+    const { name, email, phone, block, room, password } = req.body;
 
     if (!phone || phone.trim().length < 10) {
       return res.status(400).json({ message: 'Mandatory phone number is required.' });
     }
 
     const cleanPhone = phone.trim();
-
-    if (otp) {
-      const storedData = otpStore.get(cleanPhone);
-      if (!storedData || storedData.otp !== otp.trim()) {
-        return res.status(400).json({ message: 'Invalid or expired OTP code! Please try again.' });
-      }
-      otpStore.delete(cleanPhone);
-    }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -112,7 +77,7 @@ app.post('/api/auth/register', async (req, res) => {
       initials: newUser.initials
     };
 
-    res.status(201).json({ message: 'Account created & Phone Verified in MongoDB Atlas!', user: userResponse });
+    res.status(201).json({ message: 'Account created successfully in MongoDB Atlas!', user: userResponse });
   } catch (error) {
     res.status(500).json({ message: 'Server error during registration.', error: error.message });
   }
@@ -256,7 +221,6 @@ app.get('*', (req, res) => {
     return res.status(404).json({ message: 'API Endpoint Not Found' });
   }
 
-  // If request is for a static asset file (.css, .js, .png, etc.), return 404 instead of index.html
   if (path.extname(req.path)) {
     return res.status(404).send('File not found');
   }

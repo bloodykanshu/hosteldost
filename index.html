@@ -79,7 +79,7 @@
           <input type="password" id="regPassword" placeholder="••••••••" required>
         </div>
         <button type="submit" class="btn-primary-purple btn-full-width">
-          <i class="fa-solid fa-mobile-screen-button"></i> Send OTP & Verify Phone Number
+          <i class="fa-solid fa-user-plus"></i> Create Account & Proceed
         </button>
       </form>
     </div>
@@ -321,40 +321,6 @@
       <div class="chat-footer">
         <input type="text" id="chatInput" placeholder="Type message to roomie...">
         <button class="btn-primary-purple" id="sendChatBtn"><i class="fa-solid fa-paper-plane"></i></button>
-      </div>
-    </div>
-  </div>
-
-  <!-- PHONE OTP VERIFICATION MODAL -->
-  <div class="modal-overlay" id="otpModal">
-    <div class="modal-card" style="max-width: 400px; text-align: center;">
-      <div class="modal-header" style="justify-content: space-between;">
-        <h3><i class="fa-solid fa-shield-halved" style="color:var(--accent-purple);"></i> Verify Mobile Number</h3>
-        <button class="close-modal-btn closeModal" data-modal="otpModal">&times;</button>
-      </div>
-      <div class="modal-body" style="padding: 1.5rem 1rem;">
-        <div style="font-size: 2.5rem; color: var(--accent-purple); margin-bottom: 0.5rem;">
-          <i class="fa-solid fa-mobile-screen-button"></i>
-        </div>
-        <h4 style="margin-bottom: 0.3rem; color: #fff;">Enter 4-Digit OTP Code</h4>
-        <p id="otpPhoneNotice" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">
-          We generated a code for +91 <strong id="otpNoticeNumber">9876543210</strong>
-        </p>
-
-        <!-- Prominent Display Banner for Generated OTP Code -->
-        <div style="background: rgba(139, 92, 246, 0.18); border: 1px dashed var(--accent-purple); padding: 0.75rem; border-radius: var(--radius-md); margin-bottom: 1.25rem;">
-          <span style="font-size:0.8rem; color:var(--text-secondary); display:block;">📱 Your Verification OTP Code:</span>
-          <strong id="modalGeneratedOTPDisplay" style="font-size: 1.6rem; color: var(--accent-purple); letter-spacing: 0.3rem;">4829</strong>
-        </div>
-
-        <form id="otpVerifyForm">
-          <div class="form-group" style="margin-bottom: 1.25rem;">
-            <input type="text" id="inputOTP" placeholder="Enter OTP (e.g. 4829)" maxlength="4" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: 800; border-color: var(--accent-purple);" required>
-          </div>
-          <button type="submit" class="btn-primary-purple btn-full-width" style="padding: 0.85rem;">
-            <i class="fa-solid fa-check-double"></i> Verify OTP & Complete Registration
-          </button>
-        </form>
       </div>
     </div>
   </div>
