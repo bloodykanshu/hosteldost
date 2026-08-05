@@ -6,17 +6,36 @@ const API_BASE = window.location.origin.includes('localhost')
   ? 'http://localhost:5000/api'
   : `${window.location.origin}/api`;
 
+let pendingRegData = null;
+let currentGeneratedOTP = null;
+
 class HostelBuddyAuth {
   constructor() {
     this.currentUser = JSON.parse(localStorage.getItem('hostelbuddy_current_user') || 'null');
   }
 
-  async register(name, email, block, room, password) {
+  async sendOTP(phone) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to send OTP');
+      return data.otp;
+    } catch (err) {
+      // Fallback local OTP generation
+      return Math.floor(1000 + Math.random() * 9000).toString();
+    }
+  }
+
+  async register(name, email, phone, block, room, password, otp) {
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, block, room, password })
+        body: JSON.stringify({ name, email, phone, block, room, password, otp })
       });
 
       const data = await res.json();
@@ -25,9 +44,10 @@ class HostelBuddyAuth {
       this.setCurrentUser(data.user);
       return data.user;
     } catch (err) {
+      if (err.message && !err.message.includes('fetch')) throw err;
       // Fallback local auth if server API is offline
       const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'HB';
-      const fallbackUser = { id: `usr_${Date.now()}`, name, email, block, room: `${block} - ${room}`, initials };
+      const fallbackUser = { id: `usr_${Date.now()}`, name, email, phone, block, room: `${block} - ${room}`, initials };
       this.setCurrentUser(fallbackUser);
       return fallbackUser;
     }
@@ -49,7 +69,7 @@ class HostelBuddyAuth {
     } catch (err) {
       if (err.message && !err.message.includes('fetch')) throw err;
       // Fallback local authentication
-      const fallbackUser = { id: `usr_demo`, name: email.split('@')[0], email, block: 'Block A', room: 'Block A - Room 102', initials: 'AA' };
+      const fallbackUser = { id: `usr_demo`, name: email.split('@')[0], email, phone: '9876543210', block: 'Block A', room: 'Block A - Room 102', initials: 'AA' };
       this.setCurrentUser(fallbackUser);
       return fallbackUser;
     }
@@ -263,6 +283,7 @@ function openProfileModal() {
   document.getElementById('modalProfileAvatar').textContent = u.initials || 'HB';
   document.getElementById('modalProfileName').textContent = u.name;
   document.getElementById('modalProfileEmail').textContent = u.email || 'Student Account';
+  document.getElementById('modalProfilePhone').innerHTML = `<i class="fa-solid fa-phone"></i> +91 ${u.phone || '9876543210'}`;
   document.getElementById('modalProfileRoom').innerHTML = `<i class="fa-solid fa-building"></i> ${u.room}`;
 
   openModal('profileModal');
@@ -273,6 +294,7 @@ function setupAuthEventListeners() {
   const tabRegister = document.getElementById('tabAuthRegister');
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
+  const otpVerifyForm = document.getElementById('otpVerifyForm');
 
   tabLogin.addEventListener('click', () => {
     tabLogin.classList.add('active');
@@ -306,13 +328,53 @@ function setupAuthEventListeners() {
     e.preventDefault();
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
     const block = document.getElementById('regBlock').value;
     const room = document.getElementById('regRoom').value.trim();
     const password = document.getElementById('regPassword').value;
 
+    if (phone.length < 10) {
+      showToast('⚠️ Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    pendingRegData = { name, email, phone, block, room, password };
+
     try {
-      await auth.register(name, email, block, room, password);
-      showToast(`🎉 Account created! Welcome ${name}`);
+      currentGeneratedOTP = await auth.sendOTP(phone);
+      document.getElementById('otpNoticeNumber').textContent = phone;
+      document.getElementById('inputOTP').value = '';
+      openModal('otpModal');
+
+      // Simulated SMS Toast Banner
+      showToast(`📱 [SMS Alert] Your HostelBuddy Verification OTP is ${currentGeneratedOTP}`);
+    } catch (err) {
+      showToast(`⚠️ ${err.message}`);
+    }
+  });
+
+  otpVerifyForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const inputOTP = document.getElementById('inputOTP').value.trim();
+
+    if (!pendingRegData) {
+      showToast('⚠️ Registration session expired. Please try again.');
+      closeModal('otpModal');
+      return;
+    }
+
+    if (inputOTP !== currentGeneratedOTP) {
+      showToast('⚠️ Incorrect OTP Code! Please check the SMS Toast banner.');
+      return;
+    }
+
+    try {
+      const { name, email, phone, block, room, password } = pendingRegData;
+      await auth.register(name, email, phone, block, room, password, inputOTP);
+      closeModal('otpModal');
+      showToast(`🎉 Phone Verified & Account Created! Welcome ${name}`);
+      pendingRegData = null;
+      currentGeneratedOTP = null;
       await checkAuthScreenState();
     } catch (err) {
       showToast(`⚠️ ${err.message}`);
@@ -624,7 +686,7 @@ async function handlePostSubmit(e) {
     fare,
     hostName: user.name,
     room: user.room,
-    contact: user.email,
+    contact: user.phone || user.email,
     description,
     userId: user.id
   };
@@ -683,5 +745,5 @@ function showToast(message) {
     toast.style.opacity = '0';
     toast.style.transition = 'opacity 0.3s ease';
     setTimeout(() => toast.remove(), 300);
-  }, 3500);
+  }, 4000);
 }

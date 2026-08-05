@@ -54,6 +54,10 @@
           <label for="regEmail">Student Email</label>
           <input type="email" id="regEmail" placeholder="aalekh@hostel.edu" required>
         </div>
+        <div class="form-group">
+          <label for="regPhone">Mobile Phone Number (Mandatory)</label>
+          <input type="tel" id="regPhone" placeholder="e.g. 9876543210" pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit mobile number" required>
+        </div>
         <div class="form-row">
           <div class="form-group half">
             <label for="regBlock">Hostel Block</label>
@@ -75,7 +79,7 @@
           <input type="password" id="regPassword" placeholder="••••••••" required>
         </div>
         <button type="submit" class="btn-primary-purple btn-full-width">
-          <i class="fa-solid fa-user-plus"></i> Create Account & Proceed
+          <i class="fa-solid fa-mobile-screen-button"></i> Send OTP & Verify Phone Number
         </button>
       </form>
     </div>
@@ -321,6 +325,33 @@
     </div>
   </div>
 
+  <!-- PHONE OTP VERIFICATION MODAL -->
+  <div class="modal-overlay" id="otpModal">
+    <div class="modal-card" style="max-width: 400px; text-align: center;">
+      <div class="modal-header" style="justify-content: center;">
+        <h3><i class="fa-solid fa-shield-halved" style="color:var(--accent-purple);"></i> Verify Mobile Number</h3>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem 1rem;">
+        <div style="font-size: 2.5rem; color: var(--accent-purple); margin-bottom: 0.5rem;">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <h4 style="margin-bottom: 0.3rem; color: #fff;">Enter 4-Digit OTP Code</h4>
+        <p id="otpPhoneNotice" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+          We sent a verification code to +91 <strong id="otpNoticeNumber">9876543210</strong>
+        </p>
+
+        <form id="otpVerifyForm">
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <input type="text" id="inputOTP" placeholder="Enter 4-Digit OTP (e.g. 4829)" maxlength="4" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: 800; border-color: var(--accent-purple);" required>
+          </div>
+          <button type="submit" class="btn-primary-purple btn-full-width" style="padding: 0.85rem;">
+            <i class="fa-solid fa-check-double"></i> Verify OTP & Complete Registration
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- USER PROFILE & SETTINGS MODAL -->
   <div class="modal-overlay" id="profileModal">
     <div class="modal-card">
@@ -333,6 +364,7 @@
           <div class="avatar-circle" id="modalProfileAvatar" style="width:72px; height:72px; font-size:1.8rem; margin:0 auto 0.75rem; background:linear-gradient(135deg, var(--accent-purple), #6366F1); display:flex; align-items:center; justify-content:center; border-radius:50%; color:#fff; font-weight:800;">HB</div>
           <h3 id="modalProfileName" style="margin:0; font-size:1.25rem; color:#FFF;">Student Name</h3>
           <p id="modalProfileEmail" style="color:var(--text-muted); font-size:0.9rem; margin-top:0.2rem;"></p>
+          <p id="modalProfilePhone" style="color:var(--accent-purple); font-size:0.85rem; font-weight:700; margin-top:0.2rem;"><i class="fa-solid fa-phone"></i> +91 9876543210</p>
           <span id="modalProfileRoom" class="room-badge" style="display:inline-block; margin-top:0.5rem; padding:0.35rem 0.85rem; font-size:0.85rem; background:rgba(139, 92, 246, 0.15); color:var(--accent-purple); border-radius:var(--radius-pill); font-weight:700;"><i class="fa-solid fa-building"></i> Room</span>
         </div>
 

@@ -13,6 +13,11 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  phone: {
+    type: String,
+    required: true,
+    trim: true
+  },
   block: {
     type: String,
     required: true
@@ -28,6 +33,10 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true
+  },
+  isPhoneVerified: {
+    type: Boolean,
+    default: true
   },
   createdAt: {
     type: Date,

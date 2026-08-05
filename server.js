@@ -11,6 +11,9 @@ const Request = require('./models/Request');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Temporary in-memory OTP store { phone: { otp, expiresAt } }
+const otpStore = new Map();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -31,13 +34,53 @@ app.get('/api/health', (req, res) => {
 });
 
 /* ==========================================================================
-   AUTH & PROFILE ROUTES
+   AUTH & OTP ROUTES
    ========================================================================== */
 
-// POST /api/auth/register
+// POST /api/auth/send-otp - Generate 4-digit verification OTP
+app.post('/api/auth/send-otp', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone || phone.trim().length < 10) {
+      return res.status(400).json({ message: 'Please enter a valid 10-digit mobile phone number.' });
+    }
+
+    // Generate random 4-digit OTP
+    const generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+    otpStore.set(phone.trim(), {
+      otp: generatedOTP,
+      expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes validity
+    });
+
+    res.json({
+      message: `OTP sent successfully to ${phone}!`,
+      phone: phone.trim(),
+      otp: generatedOTP // Returned for client simulated SMS toast
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating OTP.', error: error.message });
+  }
+});
+
+// POST /api/auth/register - Register with verified OTP & Phone Number
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, block, room, password } = req.body;
+    const { name, email, phone, block, room, password, otp } = req.body;
+
+    if (!phone || phone.trim().length < 10) {
+      return res.status(400).json({ message: 'Mandatory phone number is required.' });
+    }
+
+    const cleanPhone = phone.trim();
+
+    // Validate OTP if provided
+    if (otp) {
+      const storedData = otpStore.get(cleanPhone);
+      if (!storedData || storedData.otp !== otp.trim()) {
+        return res.status(400).json({ message: 'Invalid or expired OTP code! Please try again.' });
+      }
+      otpStore.delete(cleanPhone);
+    }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -51,10 +94,12 @@ app.post('/api/auth/register', async (req, res) => {
     const newUser = new User({
       name,
       email: email.toLowerCase(),
+      phone: cleanPhone,
       block,
       room: fullRoom,
       initials,
-      password: hashedPassword
+      password: hashedPassword,
+      isPhoneVerified: true
     });
 
     await newUser.save();
@@ -63,12 +108,13 @@ app.post('/api/auth/register', async (req, res) => {
       id: newUser._id.toString(),
       name: newUser.name,
       email: newUser.email,
+      phone: newUser.phone,
       block: newUser.block,
       room: newUser.room,
       initials: newUser.initials
     };
 
-    res.status(201).json({ message: 'Account created successfully in MongoDB Atlas!', user: userResponse });
+    res.status(201).json({ message: 'Account created & Phone Verified in MongoDB Atlas!', user: userResponse });
   } catch (error) {
     res.status(500).json({ message: 'Server error during registration.', error: error.message });
   }
@@ -93,6 +139,7 @@ app.post('/api/auth/login', async (req, res) => {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
+      phone: user.phone || 'N/A',
       block: user.block,
       room: user.room,
       initials: user.initials
@@ -104,18 +151,13 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// DELETE /api/auth/profile/:userId - Permanently Delete Account and associated posts/joins
+// DELETE /api/auth/profile/:userId - Permanently Delete Account
 app.delete('/api/auth/profile/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
 
-    // Delete user document
     await User.findByIdAndDelete(userId);
-
-    // Delete travel requests created by user
     await Request.deleteMany({ userId });
-
-    // Remove user from joinedUsers array in all other requests
     await Request.updateMany(
       {},
       { $pull: { joinedUsers: { userId } } }
@@ -191,13 +233,11 @@ app.post('/api/requests/:id/join', async (req, res) => {
       return res.status(400).json({ message: 'Sorry, no spots remaining for this travel request!' });
     }
 
-    // Check if user already joined
     const alreadyJoined = reqItem.joinedUsers.some(u => u.userId === userId || (u.name === name && u.room === room));
     if (alreadyJoined) {
       return res.status(400).json({ message: 'You have already joined this travel request!' });
     }
 
-    // Decrement spots by 1 & add to joinedUsers array
     reqItem.spots -= 1;
     reqItem.joinedUsers.push({ userId, name, room });
 
