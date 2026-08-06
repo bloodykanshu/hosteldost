@@ -607,8 +607,19 @@ function attachCardEvents(parent) {
     });
   });
 
+  parent.querySelectorAll('.companion-card').forEach(card => {
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.bookmark-btn')) return;
+      openDetailModal(card.dataset.id);
+    });
+  });
+
   parent.querySelectorAll('.viewDetailBtn').forEach(btn => {
-    btn.addEventListener('click', () => openDetailModal(btn.dataset.id));
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDetailModal(btn.dataset.id);
+    });
   });
 }
 
@@ -623,8 +634,12 @@ function closeModal(modalId) {
 }
 
 function openDetailModal(reqId) {
-  const req = store.requests.find(r => r.id === reqId);
-  if (!req) return;
+  if (!reqId) return;
+  const req = store.requests.find(r => String(r.id) === String(reqId) || String(r._id) === String(reqId));
+  if (!req) {
+    console.warn('Trip request not found for ID:', reqId);
+    return;
+  }
 
   const modalTitle = document.getElementById('modalTripTitle');
   const modalBody = document.getElementById('modalTripBody');
