@@ -57,7 +57,7 @@
         
         <div class="form-row">
           <div class="form-group half">
-            <label for="regPhone">Mobile Phone (Mandatory)</label>
+            <label for="regPhone">Your Mobile Phone</label>
             <input type="tel" id="regPhone" placeholder="e.g. 9876543210" pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit mobile number" required>
           </div>
           <div class="form-group half">
@@ -68,6 +68,11 @@
               <option value="Other">Other 🌈</option>
             </select>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label for="regEmergencyPhone">Emergency Contact Mobile (Parent / Warden)</label>
+          <input type="tel" id="regEmergencyPhone" placeholder="e.g. 9876543210 (For SOS WhatsApp Alert)" pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit emergency contact mobile number" required>
         </div>
 
         <div class="form-row">
@@ -119,6 +124,11 @@
         </div>
 
         <div class="header-right-actions">
+          <!-- SOS EMERGENCY BUTTON -->
+          <button class="btn-sos-red" id="sosBtn" title="🚨 Trigger Emergency WhatsApp Alert to Your Registered Contact">
+            <i class="fa-solid fa-triangle-exclamation"></i> 🚨 SOS ALERT
+          </button>
+
           <div class="user-profile-pill" id="profilePillBtn" style="cursor:pointer;" title="Click to View Profile & Settings">
             <div class="avatar-circle" id="userAvatarText">AA</div>
             <div class="user-meta">
@@ -380,10 +390,11 @@
       </div>
       <div class="modal-body" style="padding: 1.5rem;">
         <div style="text-align: center; margin-bottom: 1.5rem;">
-          <div class="avatar-circle" id="modalProfileAvatar" style="width:72px; height:72px; font-size:1.8rem; margin:0 auto 0.75rem; background:linear-gradient(135deg, var(--accent-purple), #6366F1); display:flex; align-items:center; justify-content:center; border-radius:50%; color:#fff; font-weight:800;">HB</div>
+          <div class="avatar-circle" id="modalProfileAvatar" style="width:72px; height:72px; font-size:1.8rem; margin:0 auto 0.75rem; background:linear-gradient(135deg, var(--accent-purple), #6366F1); display:flex; align-items:center; justify-content:center; border-radius:50%; color:#fff; font-weight:800;">SC</div>
           <h3 id="modalProfileName" style="margin:0; font-size:1.25rem; color:#FFF;">Student Name</h3>
           <p id="modalProfileEmail" style="color:var(--text-muted); font-size:0.9rem; margin-top:0.2rem;"></p>
           <p id="modalProfilePhone" style="color:var(--accent-purple); font-size:0.85rem; font-weight:700; margin-top:0.2rem;"><i class="fa-solid fa-phone"></i> +91 9876543210</p>
+          <p id="modalProfileEmergencyPhone" style="color:#EF4444; font-size:0.85rem; font-weight:700; margin-top:0.2rem;"><i class="fa-solid fa-triangle-exclamation"></i> SOS Contact: +91 9876543210</p>
           <span id="modalProfileGender" style="display:inline-block; margin-top:0.3rem; padding:0.2rem 0.65rem; font-size:0.8rem; background:rgba(255,255,255,0.08); color:var(--text-secondary); border-radius:9999px; font-weight:700;">Gender: Male</span>
           <br>
           <span id="modalProfileRoom" class="room-badge" style="display:inline-block; margin-top:0.5rem; padding:0.35rem 0.85rem; font-size:0.85rem; background:rgba(139, 92, 246, 0.15); color:var(--accent-purple); border-radius:var(--radius-pill); font-weight:700;"><i class="fa-solid fa-building"></i> Room</span>

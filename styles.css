@@ -261,6 +261,34 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; outline: non
   border-color: var(--accent-purple);
 }
 
+.btn-sos-red {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  color: #FFFFFF;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-md);
+  font-weight: 800;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all var(--transition-normal);
+  white-space: nowrap;
+  animation: sosPulse 2s infinite;
+}
+
+@keyframes sosPulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.btn-sos-red:hover {
+  transform: scale(1.04);
+  background: linear-gradient(135deg, #DC2626, #B91C1C);
+}
+
 /* ==========================================================================
    HEADER & NAVIGATION (RESPONSIVE)
    ========================================================================== */

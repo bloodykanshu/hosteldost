@@ -11,12 +11,12 @@ class HostelBuddyAuth {
     this.currentUser = JSON.parse(localStorage.getItem('sathchalo_current_user') || localStorage.getItem('hostelbuddiieess_current_user') || localStorage.getItem('hostelbuddy_current_user') || 'null');
   }
 
-  async register(name, email, phone, gender, block, room, password) {
+  async register(name, email, phone, emergencyPhone, gender, block, room, password) {
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, gender, block, room, password })
+        body: JSON.stringify({ name, email, phone, emergencyPhone, gender, block, room, password })
       });
 
       const data = await res.json();
@@ -28,7 +28,7 @@ class HostelBuddyAuth {
       if (err.message && !err.message.includes('fetch')) throw err;
       // Fallback local auth if server API is offline
       const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'SC';
-      const fallbackUser = { id: `usr_${Date.now()}`, name, email, phone, gender, block, room: `${block} - ${room}`, initials };
+      const fallbackUser = { id: `usr_${Date.now()}`, name, email, phone, emergencyPhone, gender, block, room: `${block} - ${room}`, initials };
       this.setCurrentUser(fallbackUser);
       return fallbackUser;
     }
@@ -50,7 +50,7 @@ class HostelBuddyAuth {
     } catch (err) {
       if (err.message && !err.message.includes('fetch')) throw err;
       // Fallback local authentication
-      const fallbackUser = { id: `usr_demo`, name: email.split('@')[0], email, phone: '9876543210', gender: 'Male', block: 'Block A', room: 'Block A - Room 102', initials: 'AA' };
+      const fallbackUser = { id: `usr_demo`, name: email.split('@')[0], email, phone: '9876543210', emergencyPhone: '9876543210', gender: 'Male', block: 'Block A', room: 'Block A - Room 102', initials: 'AA' };
       this.setCurrentUser(fallbackUser);
       return fallbackUser;
     }
@@ -274,6 +274,7 @@ function openProfileModal() {
   document.getElementById('modalProfileName').textContent = u.name;
   document.getElementById('modalProfileEmail').textContent = u.email || 'Student Account';
   document.getElementById('modalProfilePhone').innerHTML = `<i class="fa-solid fa-phone"></i> +91 ${u.phone || '9876543210'}`;
+  document.getElementById('modalProfileEmergencyPhone').innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> SOS Contact: +91 ${u.emergencyPhone || 'Not Set'}`;
   document.getElementById('modalProfileGender').textContent = `Gender: ${u.gender || 'Male'}`;
   document.getElementById('modalProfileRoom').innerHTML = `<i class="fa-solid fa-building"></i> ${u.room}`;
 
@@ -319,6 +320,7 @@ function setupAuthEventListeners() {
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const phone = document.getElementById('regPhone').value.trim();
+    const emergencyPhone = document.getElementById('regEmergencyPhone').value.trim();
     const gender = document.getElementById('regGender').value;
     const block = document.getElementById('regBlock').value;
     const room = document.getElementById('regRoom').value.trim();
@@ -329,8 +331,13 @@ function setupAuthEventListeners() {
       return;
     }
 
+    if (emergencyPhone.length < 10) {
+      showToast('⚠️ Please enter a valid 10-digit emergency contact number.');
+      return;
+    }
+
     try {
-      await auth.register(name, email, phone, gender, block, room, password);
+      await auth.register(name, email, phone, emergencyPhone, gender, block, room, password);
       showToast(`🎉 Account created! Welcome to SathChalo, ${name}`);
       await checkAuthScreenState();
     } catch (err) {
@@ -341,6 +348,9 @@ function setupAuthEventListeners() {
 
 function setupDashboardEventListeners() {
   document.getElementById('profilePillBtn').addEventListener('click', openProfileModal);
+
+  // SOS ALERT BUTTON CLICK HANDLER
+  document.getElementById('sosBtn').addEventListener('click', triggerEmergencySOS);
 
   document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
     if (!auth.currentUser) return;
@@ -419,12 +429,31 @@ function setupDashboardEventListeners() {
   });
 }
 
-function formatStatCurrency(val) {
-  if (isNaN(val) || !isFinite(val) || val <= 0) return '0';
-  if (val >= 10000000) return `${(val / 10000000).toFixed(1)}Cr`;
-  if (val >= 100000) return `${(val / 100000).toFixed(1)}L`;
-  if (val >= 10000) return `${(val / 1000).toFixed(1)}K`;
-  return val.toLocaleString('en-IN');
+function triggerEmergencySOS() {
+  if (!auth.currentUser) {
+    showToast("⚠️ Please log in to trigger Emergency SOS Alert.");
+    return;
+  }
+
+  const u = auth.currentUser;
+  let rawPhone = u.emergencyPhone || u.phone || '';
+  let digits = rawPhone.replace(/\D/g, '');
+
+  if (digits.length === 10) {
+    digits = '91' + digits;
+  }
+
+  if (digits.length < 10) {
+    showToast("⚠️ Please add a valid 10-digit Emergency Contact in your Registration / Profile.");
+    openProfileModal();
+    return;
+  }
+
+  const emergencyMessage = `🚨 EMERGENCY ALERT! I need immediate help!\n\nName: ${u.name}\nRoom: ${u.room}\nPhone: ${u.phone}\nSent via SathChalo Hostel App SOS.`;
+  const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent(emergencyMessage)}`;
+
+  showToast("🚨 Opening WhatsApp Emergency Alert to your contact...");
+  window.open(waUrl, '_blank');
 }
 
 function updateDashboardStats() {

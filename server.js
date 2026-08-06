@@ -34,16 +34,17 @@ app.get('/api/health', (req, res) => {
    AUTH ROUTES
    ========================================================================== */
 
-// POST /api/auth/register - Registration with Gender Selection
+// POST /api/auth/register - Registration with Emergency Phone & Gender Selection
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, phone, gender, block, room, password } = req.body;
+    const { name, email, phone, emergencyPhone, gender, block, room, password } = req.body;
 
     if (!phone || phone.trim().length < 10) {
       return res.status(400).json({ message: 'Mandatory phone number is required.' });
     }
 
     const cleanPhone = phone.trim();
+    const cleanEmergencyPhone = emergencyPhone ? emergencyPhone.trim() : '';
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -51,13 +52,14 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'HB';
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'SC';
     const fullRoom = `${block} - ${room}`;
 
     const newUser = new User({
       name,
       email: email.toLowerCase(),
       phone: cleanPhone,
+      emergencyPhone: cleanEmergencyPhone,
       gender: gender || 'Male',
       block,
       room: fullRoom,
@@ -73,6 +75,7 @@ app.post('/api/auth/register', async (req, res) => {
       name: newUser.name,
       email: newUser.email,
       phone: newUser.phone,
+      emergencyPhone: newUser.emergencyPhone,
       gender: newUser.gender,
       block: newUser.block,
       room: newUser.room,
@@ -105,6 +108,7 @@ app.post('/api/auth/login', async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone || 'N/A',
+      emergencyPhone: user.emergencyPhone || '',
       gender: user.gender || 'Male',
       block: user.block,
       room: user.room,
@@ -143,7 +147,7 @@ app.delete('/api/auth/profile/:userId', async (req, res) => {
 app.get('/api/requests', async (req, res) => {
   try {
     const requests = await Request.find().sort({ createdAt: -1 });
-    // Sanitize any existing huge fares or bad numbers
+    // Sanitize existing requests
     const sanitizedRequests = requests.map(r => ({
       ...r.toObject(),
       fare: Math.min(Math.max(0, Number(r.fare) || 0), 10000),
