@@ -525,8 +525,7 @@ function getGenderBadgeHTML(genderFilter) {
 }
 
 function createCardHTML(req) {
-  const reqId = req.id || req._id || `req_${Date.now()}`;
-  const isSaved = store.savedIds.has(reqId);
+  const isSaved = store.savedIds.has(req.id);
   const curUser = auth.currentUser;
   const joinedList = req.joinedUsers || [];
   const hasJoined = curUser && joinedList.some(u => u.userId === curUser.id || (u.name === curUser.name && u.room === curUser.room));
@@ -536,48 +535,30 @@ function createCardHTML(req) {
     : '';
 
   const genderBadge = getGenderBadgeHTML(req.genderFilter);
-  const CATEGORY_COVERS = {
-    '✈️ Transit & Airport': 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop',
-    '🛍️ Malls & Shopping': 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&auto=format&fit=crop',
-    '🍔 Cafes & Food': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop',
-    '🎬 Movies & Outing': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop',
-    '📚 College & Exams': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop',
-    '🏥 Medical & Urgent': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop'
-  };
-
-  const coverImage = (req.coverImage && req.coverImage.startsWith('http'))
-    ? req.coverImage
-    : (CATEGORY_COVERS[req.category] || CATEGORY_COVERS['✈️ Transit & Airport']);
-
-  const hostAvatar = req.hostAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.hostName || 'Student')}&background=8B5CF6&color=fff&bold=true`;
-  const pickupLoc = (req.pickup && req.pickup.trim()) ? req.pickup.trim() : 'Hostel Gate';
-  const destLoc = (req.destination && req.destination.trim()) ? req.destination.trim() : 'Destination';
 
   return `
-    <article class="companion-card" data-id="${reqId}">
-      <div class="card-header-banner" style="background-image: url('${coverImage}');">
+    <article class="companion-card" data-id="${req.id}">
+      <div class="card-header-banner" style="background-image: url('${req.coverImage}');">
         <div class="card-header-overlay"></div>
         <div style="position:relative; z-index:2; display:flex; gap:0.4rem; flex-wrap:wrap;">
           <div class="category-tag-badge">${req.category}</div>
           ${genderBadge}
         </div>
-        <button class="bookmark-btn ${isSaved ? 'active' : ''}" data-id="${reqId}" title="${isSaved ? 'Bookmark' : 'Save'}">
+        <button class="bookmark-btn ${isSaved ? 'active' : ''}" data-id="${req.id}" title="${isSaved ? 'Bookmark' : 'Save'}">
           <i class="fa-${isSaved ? 'solid' : 'regular'} fa-bookmark"></i>
         </button>
       </div>
 
       <div class="card-body">
         <div class="host-row">
-          <img src="${hostAvatar}" alt="${req.hostName}" class="host-avatar" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(req.hostName || 'Student')}&background=8B5CF6&color=fff&bold=true';">
+          <img src="${req.hostAvatar}" alt="${req.hostName}" class="host-avatar">
           <div class="host-info">
             <span class="host-name">${req.hostName}</span>
             <span class="room-badge"><i class="fa-solid fa-building"></i> ${req.room}</span>
           </div>
         </div>
 
-        <h3 class="destination-title" style="font-size:1.05rem; font-weight:800; color:var(--text-primary); margin:0.4rem 0 0.75rem; word-break:break-word;">
-          📍 ${pickupLoc} <span style="color:var(--accent-purple); font-weight:900;">➔</span> ${destLoc}
-        </h3>
+        <h3 class="destination-title">${req.destination}</h3>
 
         <div class="trip-meta-row">
           <div class="meta-item"><i class="fa-regular fa-clock"></i> <span>${req.time}</span></div>
@@ -588,7 +569,7 @@ function createCardHTML(req) {
 
         <div class="card-footer" style="margin-top:0.75rem;">
           <div class="spots-badge">${req.spots > 0 ? `${req.spots} spots left` : '🔴 Full'} • ₹${req.fare} share</div>
-          <button class="btn-join-card viewDetailBtn" data-id="${reqId}">
+          <button class="btn-join-card viewDetailBtn" data-id="${req.id}">
             ${hasJoined ? '✅ Joined (View)' : 'View & Join'}
           </button>
         </div>
@@ -608,19 +589,8 @@ function attachCardEvents(parent) {
     });
   });
 
-  parent.querySelectorAll('.companion-card').forEach(card => {
-    card.style.cursor = 'pointer';
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.bookmark-btn')) return;
-      openDetailModal(card.dataset.id);
-    });
-  });
-
   parent.querySelectorAll('.viewDetailBtn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openDetailModal(btn.dataset.id);
-    });
+    btn.addEventListener('click', () => openDetailModal(btn.dataset.id));
   });
 }
 
@@ -635,15 +605,8 @@ function closeModal(modalId) {
 }
 
 function openDetailModal(reqId) {
-  let req = store.requests.find(r => String(r.id) === String(reqId) || String(r._id) === String(reqId));
-  if (!req && store.requests.length > 0) {
-    req = store.requests[0];
-  }
-
-  if (!req) {
-    console.warn('Trip request not found for ID:', reqId);
-    return;
-  }
+  const req = store.requests.find(r => r.id === reqId);
+  if (!req) return;
 
   const modalTitle = document.getElementById('modalTripTitle');
   const modalBody = document.getElementById('modalTripBody');
@@ -651,7 +614,7 @@ function openDetailModal(reqId) {
   const joinedList = req.joinedUsers || [];
   const hasJoined = curUser && joinedList.some(u => u.userId === curUser.id || (u.name === curUser.name && u.room === curUser.room));
 
-  modalTitle.innerHTML = `<i class="fa-solid fa-location-dot" style="color:var(--accent-purple);"></i> ${req.pickup || 'Hostel Gate'} ➔ ${req.destination}`;
+  modalTitle.innerHTML = `<i class="fa-solid fa-location-dot" style="color:var(--accent-purple);"></i> ${req.destination}`;
 
   const joinedBuddiesListHTML = joinedList.length > 0
     ? `<div style="background:var(--bg-surface); padding:0.85rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1rem;">
@@ -662,24 +625,11 @@ function openDetailModal(reqId) {
        </div>`
     : `<div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;"><i class="fa-solid fa-info-circle"></i> No companions have joined this trip yet.</div>`;
 
-  const CATEGORY_COVERS = {
-    '✈️ Transit & Airport': 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop',
-    '🛍️ Malls & Shopping': 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&auto=format&fit=crop',
-    '🍔 Cafes & Food': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop',
-    '🎬 Movies & Outing': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop',
-    '📚 College & Exams': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop',
-    '🏥 Medical & Urgent': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop'
-  };
-
-  const coverImage = (req.coverImage && req.coverImage.startsWith('http'))
-    ? req.coverImage
-    : (CATEGORY_COVERS[req.category] || CATEGORY_COVERS['✈️ Transit & Airport']);
-
-  const hostAvatar = req.hostAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.hostName || 'Student')}&background=8B5CF6&color=fff&bold=true`;
+  const genderBadge = getGenderBadgeHTML(req.genderFilter);
 
   modalBody.innerHTML = `
-    <div style="margin-bottom: 1.25rem; position: relative; border-radius: var(--radius-md); overflow: hidden; height: 160px; background: var(--bg-surface-elevated);">
-      <img src="${coverImage}" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop';">
+    <div style="margin-bottom: 1.25rem; position: relative; border-radius: var(--radius-md); overflow: hidden; height: 160px;">
+      <img src="${req.coverImage}" style="width:100%; height:100%; object-fit:cover;">
       <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top, rgba(0,0,0,0.85), transparent); padding: 1rem; color:#fff; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <span class="category-tag-badge">${req.category} • ${req.mode}</span>
         ${genderBadge}
@@ -688,9 +638,9 @@ function openDetailModal(reqId) {
 
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; padding-bottom:1rem; border-bottom:1px solid var(--border-color);">
       <div style="display:flex; align-items:center; gap:0.75rem;">
-        <img src="${hostAvatar}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(req.hostName || 'Student')}&background=8B5CF6&color=fff&bold=true';">
+        <img src="${req.hostAvatar}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
         <div>
-          <h4 style="font-size:1rem; color:var(--text-primary); font-weight:700;">${req.hostName}</h4>
+          <h4 style="font-size:1rem; color:#FFF;">${req.hostName}</h4>
           <span style="font-size:0.82rem; color:var(--accent-purple); font-weight:700;"><i class="fa-solid fa-building"></i> ${req.room}</span>
         </div>
       </div>
@@ -765,8 +715,7 @@ async function handlePostSubmit(e) {
   e.preventDefault();
   if (!auth.currentUser) return;
 
-  const pickup = document.getElementById('postPickup').value.trim();
-  const destination = document.getElementById('postDestination').value.trim();
+  const destination = document.getElementById('postDestination').value;
   const category = document.getElementById('postCategory').value;
   const time = document.getElementById('postTime').value;
   const mode = document.getElementById('postMode').value;
@@ -778,7 +727,6 @@ async function handlePostSubmit(e) {
   const user = auth.currentUser;
 
   const newReq = {
-    pickup: pickup || 'Hostel Gate',
     destination,
     category,
     time,

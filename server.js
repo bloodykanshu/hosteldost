@@ -30,15 +30,6 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', connected: mongoose.connection.readyState === 1 });
 });
 
-const DEFAULT_COVERS = {
-  '✈️ Transit & Airport': 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop',
-  '🛍️ Malls & Shopping': 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&auto=format&fit=crop',
-  '🍔 Cafes & Food': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop',
-  '🎬 Movies & Outing': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop',
-  '📚 College & Exams': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop',
-  '🏥 Medical & Urgent': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop'
-};
-
 /* ==========================================================================
    AUTH ROUTES
    ========================================================================== */
@@ -156,21 +147,12 @@ app.delete('/api/auth/profile/:userId', async (req, res) => {
 app.get('/api/requests', async (req, res) => {
   try {
     const requests = await Request.find().sort({ createdAt: -1 });
-    const sanitizedRequests = requests.map(r => {
-      const obj = r.toObject();
-      const cover = obj.coverImage && obj.coverImage.startsWith('http')
-        ? obj.coverImage
-        : (DEFAULT_COVERS[obj.category] || 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop');
-
-      return {
-        ...obj,
-        pickup: obj.pickup || 'Hostel Gate',
-        coverImage: cover,
-        hostAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(obj.hostName || 'Student')}&background=8B5CF6&color=fff&bold=true`,
-        fare: Math.min(Math.max(0, Number(obj.fare) || 0), 10000),
-        spots: Math.min(Math.max(0, Number(obj.spots) || 0), 10)
-      };
-    });
+    // Sanitize existing requests
+    const sanitizedRequests = requests.map(r => ({
+      ...r.toObject(),
+      fare: Math.min(Math.max(0, Number(r.fare) || 0), 10000),
+      spots: Math.min(Math.max(0, Number(r.spots) || 0), 10)
+    }));
     res.json(sanitizedRequests);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching travel requests.', error: error.message });
@@ -180,14 +162,19 @@ app.get('/api/requests', async (req, res) => {
 // POST /api/requests
 app.post('/api/requests', async (req, res) => {
   try {
-    const { pickup, destination, category, time, mode, genderFilter, spots, fare, hostName, room, contact, description, userId } = req.body;
+    const { destination, category, time, mode, genderFilter, spots, fare, hostName, room, contact, description, userId } = req.body;
 
     const sanitizedFare = Math.min(Math.max(0, Number(fare) || 0), 10000);
     const sanitizedSpots = Math.min(Math.max(1, Number(spots) || 1), 10);
-    const coverImage = DEFAULT_COVERS[category] || 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop';
+
+    const defaultCovers = [
+      'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600',
+      'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600',
+      'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600',
+      'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600'
+    ];
 
     const newRequest = new Request({
-      pickup: pickup || 'Hostel Gate',
       destination,
       category,
       time,
@@ -201,17 +188,11 @@ app.post('/api/requests', async (req, res) => {
       description,
       userId: userId || null,
       joinedUsers: [],
-      coverImage
+      coverImage: defaultCovers[Math.floor(Math.random() * defaultCovers.length)]
     });
 
     await newRequest.save();
-
-    const responseObj = {
-      ...newRequest.toObject(),
-      hostAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName)}&background=8B5CF6&color=fff&bold=true`
-    };
-
-    res.status(201).json({ message: 'Travel request posted to MongoDB Atlas!', request: responseObj });
+    res.status(201).json({ message: 'Travel request posted to MongoDB Atlas!', request: newRequest });
   } catch (error) {
     res.status(500).json({ message: 'Error creating travel request.', error: error.message });
   }
