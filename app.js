@@ -535,9 +535,22 @@ function createCardHTML(req) {
     : '';
 
   const genderBadge = getGenderBadgeHTML(req.genderFilter);
-  const coverImage = req.coverImage || 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop';
+  const CATEGORY_COVERS = {
+    '✈️ Transit & Airport': 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop',
+    '🛍️ Malls & Shopping': 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&auto=format&fit=crop',
+    '🍔 Cafes & Food': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop',
+    '🎬 Movies & Outing': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop',
+    '📚 College & Exams': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop',
+    '🏥 Medical & Urgent': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop'
+  };
+
+  const coverImage = (req.coverImage && req.coverImage.startsWith('http'))
+    ? req.coverImage
+    : (CATEGORY_COVERS[req.category] || CATEGORY_COVERS['✈️ Transit & Airport']);
+
   const hostAvatar = req.hostAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.hostName || 'Student')}&background=8B5CF6&color=fff&bold=true`;
-  const pickupLoc = req.pickup || 'Hostel Gate';
+  const pickupLoc = (req.pickup && req.pickup.trim()) ? req.pickup.trim() : 'Hostel Gate';
+  const destLoc = (req.destination && req.destination.trim()) ? req.destination.trim() : 'Destination';
 
   return `
     <article class="companion-card" data-id="${req.id}">
@@ -561,8 +574,8 @@ function createCardHTML(req) {
           </div>
         </div>
 
-        <h3 class="destination-title" style="font-size:1.05rem; font-weight:800; color:#FFF; margin:0.4rem 0 0.75rem; word-break:break-word;">
-          📍 ${pickupLoc} <span style="color:var(--accent-purple); font-weight:900;">➔</span> ${req.destination}
+        <h3 class="destination-title" style="font-size:1.05rem; font-weight:800; color:var(--text-primary); margin:0.4rem 0 0.75rem; word-break:break-word;">
+          📍 ${pickupLoc} <span style="color:var(--accent-purple); font-weight:900;">➔</span> ${destLoc}
         </h3>
 
         <div class="trip-meta-row">
