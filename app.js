@@ -643,11 +643,24 @@ function openDetailModal(reqId) {
        </div>`
     : `<div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;"><i class="fa-solid fa-info-circle"></i> No companions have joined this trip yet.</div>`;
 
-  const genderBadge = getGenderBadgeHTML(req.genderFilter);
+  const CATEGORY_COVERS = {
+    '✈️ Transit & Airport': 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop',
+    '🛍️ Malls & Shopping': 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&auto=format&fit=crop',
+    '🍔 Cafes & Food': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop',
+    '🎬 Movies & Outing': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop',
+    '📚 College & Exams': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop',
+    '🏥 Medical & Urgent': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop'
+  };
+
+  const coverImage = (req.coverImage && req.coverImage.startsWith('http'))
+    ? req.coverImage
+    : (CATEGORY_COVERS[req.category] || CATEGORY_COVERS['✈️ Transit & Airport']);
+
+  const hostAvatar = req.hostAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.hostName || 'Student')}&background=8B5CF6&color=fff&bold=true`;
 
   modalBody.innerHTML = `
-    <div style="margin-bottom: 1.25rem; position: relative; border-radius: var(--radius-md); overflow: hidden; height: 160px;">
-      <img src="${req.coverImage}" style="width:100%; height:100%; object-fit:cover;">
+    <div style="margin-bottom: 1.25rem; position: relative; border-radius: var(--radius-md); overflow: hidden; height: 160px; background: var(--bg-surface-elevated);">
+      <img src="${coverImage}" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop';">
       <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top, rgba(0,0,0,0.85), transparent); padding: 1rem; color:#fff; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <span class="category-tag-badge">${req.category} • ${req.mode}</span>
         ${genderBadge}
@@ -656,9 +669,9 @@ function openDetailModal(reqId) {
 
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; padding-bottom:1rem; border-bottom:1px solid var(--border-color);">
       <div style="display:flex; align-items:center; gap:0.75rem;">
-        <img src="${req.hostAvatar}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
+        <img src="${hostAvatar}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(req.hostName || 'Student')}&background=8B5CF6&color=fff&bold=true';">
         <div>
-          <h4 style="font-size:1rem; color:#FFF;">${req.hostName}</h4>
+          <h4 style="font-size:1rem; color:var(--text-primary); font-weight:700;">${req.hostName}</h4>
           <span style="font-size:0.82rem; color:var(--accent-purple); font-weight:700;"><i class="fa-solid fa-building"></i> ${req.room}</span>
         </div>
       </div>
