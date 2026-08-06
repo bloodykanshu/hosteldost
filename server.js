@@ -34,10 +34,10 @@ app.get('/api/health', (req, res) => {
    AUTH ROUTES
    ========================================================================== */
 
-// POST /api/auth/register - Direct registration with mandatory Phone Number
+// POST /api/auth/register - Registration with Gender Selection
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, phone, block, room, password } = req.body;
+    const { name, email, phone, gender, block, room, password } = req.body;
 
     if (!phone || phone.trim().length < 10) {
       return res.status(400).json({ message: 'Mandatory phone number is required.' });
@@ -58,6 +58,7 @@ app.post('/api/auth/register', async (req, res) => {
       name,
       email: email.toLowerCase(),
       phone: cleanPhone,
+      gender: gender || 'Male',
       block,
       room: fullRoom,
       initials,
@@ -72,6 +73,7 @@ app.post('/api/auth/register', async (req, res) => {
       name: newUser.name,
       email: newUser.email,
       phone: newUser.phone,
+      gender: newUser.gender,
       block: newUser.block,
       room: newUser.room,
       initials: newUser.initials
@@ -103,6 +105,7 @@ app.post('/api/auth/login', async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone || 'N/A',
+      gender: user.gender || 'Male',
       block: user.block,
       room: user.room,
       initials: user.initials
@@ -149,7 +152,7 @@ app.get('/api/requests', async (req, res) => {
 // POST /api/requests
 app.post('/api/requests', async (req, res) => {
   try {
-    const { destination, category, time, mode, spots, fare, hostName, room, contact, description, userId } = req.body;
+    const { destination, category, time, mode, genderFilter, spots, fare, hostName, room, contact, description, userId } = req.body;
 
     const defaultCovers = [
       'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600',
@@ -163,6 +166,7 @@ app.post('/api/requests', async (req, res) => {
       category,
       time,
       mode,
+      genderFilter: genderFilter || 'Any Gender',
       spots,
       fare,
       hostName,

@@ -11,12 +11,12 @@ class HostelBuddyAuth {
     this.currentUser = JSON.parse(localStorage.getItem('hostelbuddiieess_current_user') || localStorage.getItem('hostelbuddy_current_user') || 'null');
   }
 
-  async register(name, email, phone, block, room, password) {
+  async register(name, email, phone, gender, block, room, password) {
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, block, room, password })
+        body: JSON.stringify({ name, email, phone, gender, block, room, password })
       });
 
       const data = await res.json();
@@ -28,7 +28,7 @@ class HostelBuddyAuth {
       if (err.message && !err.message.includes('fetch')) throw err;
       // Fallback local auth if server API is offline
       const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'HB';
-      const fallbackUser = { id: `usr_${Date.now()}`, name, email, phone, block, room: `${block} - ${room}`, initials };
+      const fallbackUser = { id: `usr_${Date.now()}`, name, email, phone, gender, block, room: `${block} - ${room}`, initials };
       this.setCurrentUser(fallbackUser);
       return fallbackUser;
     }
@@ -50,7 +50,7 @@ class HostelBuddyAuth {
     } catch (err) {
       if (err.message && !err.message.includes('fetch')) throw err;
       // Fallback local authentication
-      const fallbackUser = { id: `usr_demo`, name: email.split('@')[0], email, phone: '9876543210', block: 'Block A', room: 'Block A - Room 102', initials: 'AA' };
+      const fallbackUser = { id: `usr_demo`, name: email.split('@')[0], email, phone: '9876543210', gender: 'Male', block: 'Block A', room: 'Block A - Room 102', initials: 'AA' };
       this.setCurrentUser(fallbackUser);
       return fallbackUser;
     }
@@ -93,6 +93,7 @@ class HostelBuddyStore {
     this.userPostIds = new Set(JSON.parse(localStorage.getItem('hostelbuddiieess_user_posts') || localStorage.getItem('hostelbuddy_user_posts') || '[]'));
     this.currentCategory = 'all';
     this.currentMode = 'all';
+    this.currentGenderFilter = 'all';
     this.activeTab = 'all';
     this.searchQuery = '';
   }
@@ -105,7 +106,8 @@ class HostelBuddyStore {
         this.requests = data.map(item => ({
           ...item,
           id: item._id || item.id,
-          joinedUsers: item.joinedUsers || []
+          joinedUsers: item.joinedUsers || [],
+          genderFilter: item.genderFilter || 'Any Gender'
         }));
       }
     } catch (err) {
@@ -207,6 +209,9 @@ class HostelBuddyStore {
       if (this.currentMode !== 'all' && req.mode !== this.currentMode) {
         return false;
       }
+      if (this.currentGenderFilter !== 'all' && (req.genderFilter || 'Any Gender') !== this.currentGenderFilter) {
+        return false;
+      }
       if (this.searchQuery.trim() !== '') {
         const q = this.searchQuery.toLowerCase();
         const matchDest = req.destination.toLowerCase().includes(q);
@@ -266,6 +271,7 @@ function openProfileModal() {
   document.getElementById('modalProfileName').textContent = u.name;
   document.getElementById('modalProfileEmail').textContent = u.email || 'Student Account';
   document.getElementById('modalProfilePhone').innerHTML = `<i class="fa-solid fa-phone"></i> +91 ${u.phone || '9876543210'}`;
+  document.getElementById('modalProfileGender').textContent = `Gender: ${u.gender || 'Male'}`;
   document.getElementById('modalProfileRoom').innerHTML = `<i class="fa-solid fa-building"></i> ${u.room}`;
 
   openModal('profileModal');
@@ -310,6 +316,7 @@ function setupAuthEventListeners() {
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const phone = document.getElementById('regPhone').value.trim();
+    const gender = document.getElementById('regGender').value;
     const block = document.getElementById('regBlock').value;
     const room = document.getElementById('regRoom').value.trim();
     const password = document.getElementById('regPassword').value;
@@ -320,7 +327,7 @@ function setupAuthEventListeners() {
     }
 
     try {
-      await auth.register(name, email, phone, block, room, password);
+      await auth.register(name, email, phone, gender, block, room, password);
       showToast(`🎉 Account created! Welcome to Hostel Buddiieess, ${name}`);
       await checkAuthScreenState();
     } catch (err) {
@@ -392,6 +399,11 @@ function setupDashboardEventListeners() {
     renderRequests();
   });
 
+  document.getElementById('genderFilterSelect').addEventListener('change', (e) => {
+    store.currentGenderFilter = e.target.value;
+    renderRequests();
+  });
+
   document.getElementById('postTripForm').addEventListener('submit', handlePostSubmit);
 
   document.querySelectorAll('.closeModal').forEach(btn => {
@@ -427,12 +439,12 @@ function renderRequests() {
     container.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 4.5rem 2rem; background: var(--bg-surface); border-radius: var(--radius-xl); border: 1px solid var(--border-color);">
         <i class="fa-solid fa-user-group" style="font-size: 3rem; color: var(--accent-purple); margin-bottom: 1rem;"></i>
-        <h3>No travel requests posted yet</h3>
+        <h3>No travel requests found</h3>
         <p style="color: var(--text-muted); margin-top: 0.5rem; max-width: 450px; margin: 0.5rem auto 0;">
-          Be the first hostel mate to post your plan! Post where you are heading (groceries, airport, station, mall, or chai tapri).
+          No posts matching your selected category or gender filter. Try changing your filters or post a new request!
         </p>
         <button class="btn-primary-purple" onclick="openModal('postTripModal')" style="margin: 1.5rem auto 0;">
-          <i class="fa-solid fa-plus"></i> Post First Travel Request
+          <i class="fa-solid fa-plus"></i> Post Travel Request
         </button>
       </div>
     `;
@@ -445,6 +457,16 @@ function renderRequests() {
   updateDashboardStats();
 }
 
+function getGenderBadgeHTML(genderFilter) {
+  if (genderFilter === 'Girls Only') {
+    return `<span style="background: rgba(236, 72, 153, 0.18); color: #F472B6; border: 1px solid rgba(236, 72, 153, 0.35); padding: 0.2rem 0.65rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;"><i class="fa-solid fa-venus"></i> Girls Only</span>`;
+  }
+  if (genderFilter === 'Boys Only') {
+    return `<span style="background: rgba(59, 130, 246, 0.18); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.35); padding: 0.2rem 0.65rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;"><i class="fa-solid fa-mars"></i> Boys Only</span>`;
+  }
+  return `<span style="background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); border: 1px solid rgba(139, 92, 246, 0.3); padding: 0.2rem 0.65rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;"><i class="fa-solid fa-user-group"></i> Open to All</span>`;
+}
+
 function createCardHTML(req) {
   const isSaved = store.savedIds.has(req.id);
   const curUser = auth.currentUser;
@@ -455,11 +477,16 @@ function createCardHTML(req) {
     ? `<div style="margin-top:0.5rem; font-size:0.75rem; color:var(--accent-purple); font-weight:700;"><i class="fa-solid fa-user-check"></i> ${joinedList.length} hostel mate(s) joined (${joinedList.map(u => u.name).join(', ')})</div>`
     : '';
 
+  const genderBadge = getGenderBadgeHTML(req.genderFilter);
+
   return `
     <article class="companion-card" data-id="${req.id}">
       <div class="card-header-banner" style="background-image: url('${req.coverImage}');">
         <div class="card-header-overlay"></div>
-        <div class="category-tag-badge">${req.category}</div>
+        <div style="position:relative; z-index:2; display:flex; gap:0.4rem; flex-wrap:wrap;">
+          <div class="category-tag-badge">${req.category}</div>
+          ${genderBadge}
+        </div>
         <button class="bookmark-btn ${isSaved ? 'active' : ''}" data-id="${req.id}" title="${isSaved ? 'Bookmark' : 'Save'}">
           <i class="fa-${isSaved ? 'solid' : 'regular'} fa-bookmark"></i>
         </button>
@@ -541,11 +568,14 @@ function openDetailModal(reqId) {
        </div>`
     : `<div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;"><i class="fa-solid fa-info-circle"></i> No companions have joined this trip yet.</div>`;
 
+  const genderBadge = getGenderBadgeHTML(req.genderFilter);
+
   modalBody.innerHTML = `
     <div style="margin-bottom: 1.25rem; position: relative; border-radius: var(--radius-md); overflow: hidden; height: 160px;">
       <img src="${req.coverImage}" style="width:100%; height:100%; object-fit:cover;">
-      <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top, rgba(0,0,0,0.85), transparent); padding: 1rem; color:#fff;">
+      <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top, rgba(0,0,0,0.85), transparent); padding: 1rem; color:#fff; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <span class="category-tag-badge">${req.category} • ${req.mode}</span>
+        ${genderBadge}
       </div>
     </div>
 
@@ -632,6 +662,7 @@ async function handlePostSubmit(e) {
   const category = document.getElementById('postCategory').value;
   const time = document.getElementById('postTime').value;
   const mode = document.getElementById('postMode').value;
+  const genderFilter = document.getElementById('postGenderFilter').value;
   const spots = parseInt(document.getElementById('postSpots').value);
   const fare = parseInt(document.getElementById('postFare').value);
   const description = document.getElementById('postDescription').value;
@@ -643,6 +674,7 @@ async function handlePostSubmit(e) {
     category,
     time,
     mode,
+    genderFilter,
     spots,
     fare,
     hostName: user.name,
@@ -656,7 +688,7 @@ async function handlePostSubmit(e) {
   renderRequests();
   closeModal('postTripModal');
   document.getElementById('postTripForm').reset();
-  showToast(`🎉 Travel request to ${destination} published to MongoDB Atlas!`);
+  showToast(`🎉 Travel request to ${destination} (${genderFilter}) published to MongoDB Atlas!`);
 }
 
 function openChatModal(hostName, room) {

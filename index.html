@@ -54,10 +54,22 @@
           <label for="regEmail">Student Email</label>
           <input type="email" id="regEmail" placeholder="aalekh@hostel.edu" required>
         </div>
-        <div class="form-group">
-          <label for="regPhone">Mobile Phone Number (Mandatory)</label>
-          <input type="tel" id="regPhone" placeholder="e.g. 9876543210" pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit mobile number" required>
+        
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="regPhone">Mobile Phone (Mandatory)</label>
+            <input type="tel" id="regPhone" placeholder="e.g. 9876543210" pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit mobile number" required>
+          </div>
+          <div class="form-group half">
+            <label for="regGender">Gender</label>
+            <select id="regGender" required>
+              <option value="Male">Male 👨</option>
+              <option value="Female">Female 👩</option>
+              <option value="Other">Other 🌈</option>
+            </select>
+          </div>
         </div>
+
         <div class="form-row">
           <div class="form-group half">
             <label for="regBlock">Hostel Block</label>
@@ -74,10 +86,12 @@
             <input type="text" id="regRoom" placeholder="e.g. 102" required>
           </div>
         </div>
+
         <div class="form-group">
           <label for="regPassword">Create Password</label>
           <input type="password" id="regPassword" placeholder="••••••••" required>
         </div>
+
         <button type="submit" class="btn-primary-purple btn-full-width">
           <i class="fa-solid fa-user-plus"></i> Create Account & Proceed
         </button>
@@ -195,7 +209,7 @@
         </div>
       </div>
 
-      <!-- CATEGORY & MODE PILLS -->
+      <!-- CATEGORY & GENDER/MODE PILLS -->
       <div class="category-filter-panel">
         <div class="category-pills-row">
           <button class="cat-btn-pill active" data-category="all">All Categories</button>
@@ -207,14 +221,25 @@
           <button class="cat-btn-pill" data-category="🏥 Medical & Urgent"><i class="fa-solid fa-kit-medical"></i> Medical & Urgent</button>
         </div>
 
-        <div class="mode-select-wrapper">
-          <select id="modeFilter" class="mode-select">
-            <option value="all">MODE: Any Travel Mode</option>
-            <option value="Cab / Auto Share">Cab / Auto Share</option>
-            <option value="Bike / Scooty">Bike / Scooty</option>
-            <option value="Bus / Metro">Bus / Metro</option>
-            <option value="Walking Group">Walking Group</option>
-          </select>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <div class="mode-select-wrapper">
+            <select id="genderFilterSelect" class="mode-select">
+              <option value="all">GENDER: Any Preference</option>
+              <option value="Girls Only">👩 Girls Only Trips</option>
+              <option value="Boys Only">👨 Boys Only Trips</option>
+              <option value="Any Gender">🤝 Open to All</option>
+            </select>
+          </div>
+
+          <div class="mode-select-wrapper">
+            <select id="modeFilter" class="mode-select">
+              <option value="all">MODE: Any Travel Mode</option>
+              <option value="Cab / Auto Share">Cab / Auto Share</option>
+              <option value="Bike / Scooty">Bike / Scooty</option>
+              <option value="Bus / Metro">Bus / Metro</option>
+              <option value="Walking Group">Walking Group</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -273,6 +298,15 @@
               <option value="Walking Group">Walking Group</option>
             </select>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label for="postGenderFilter">Group Gender Preference</label>
+          <select id="postGenderFilter" required>
+            <option value="Any Gender">🤝 Open to Any Gender</option>
+            <option value="Girls Only">👩 Girls Only Group</option>
+            <option value="Boys Only">👨 Boys Only Group</option>
+          </select>
         </div>
 
         <div class="form-row">
@@ -350,6 +384,8 @@
           <h3 id="modalProfileName" style="margin:0; font-size:1.25rem; color:#FFF;">Student Name</h3>
           <p id="modalProfileEmail" style="color:var(--text-muted); font-size:0.9rem; margin-top:0.2rem;"></p>
           <p id="modalProfilePhone" style="color:var(--accent-purple); font-size:0.85rem; font-weight:700; margin-top:0.2rem;"><i class="fa-solid fa-phone"></i> +91 9876543210</p>
+          <span id="modalProfileGender" style="display:inline-block; margin-top:0.3rem; padding:0.2rem 0.65rem; font-size:0.8rem; background:rgba(255,255,255,0.08); color:var(--text-secondary); border-radius:9999px; font-weight:700;">Gender: Male</span>
+          <br>
           <span id="modalProfileRoom" class="room-badge" style="display:inline-block; margin-top:0.5rem; padding:0.35rem 0.85rem; font-size:0.85rem; background:rgba(139, 92, 246, 0.15); color:var(--accent-purple); border-radius:var(--radius-pill); font-weight:700;"><i class="fa-solid fa-building"></i> Room</span>
         </div>
 
