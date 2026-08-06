@@ -430,15 +430,11 @@ function formatStatCurrency(val) {
 function updateDashboardStats() {
   const activeCount = store.requests.length;
   const pairedCount = store.requests.reduce((sum, r) => sum + (r.joinedUsers ? r.joinedUsers.length : 0), 0);
-  const totalFares = store.requests.reduce((sum, r) => {
-    const fareNum = Math.min(Math.max(0, Number(r.fare) || 0), 10000);
-    const spotsNum = Math.min(Math.max(0, Number(r.spots) || 0), 10);
-    return sum + (fareNum * spotsNum);
-  }, 0);
+  const soloPrevented = pairedCount;
 
   document.getElementById('statActiveRequests').textContent = activeCount;
   document.getElementById('statBuddiesPaired').textContent = pairedCount;
-  document.getElementById('statFaresSplit').textContent = `₹${formatStatCurrency(totalFares)}`;
+  document.getElementById('statSoloPrevented').textContent = soloPrevented;
 
   document.getElementById('badgeAllCount').textContent = activeCount;
   document.getElementById('badgeMyCount').textContent = store.userPostIds.size + store.savedIds.size;
