@@ -416,18 +416,26 @@ function setupDashboardEventListeners() {
   });
 }
 
+function formatStatCurrency(val) {
+  if (isNaN(val) || !isFinite(val) || val <= 0) return '0';
+  if (val >= 10000000) return `${(val / 10000000).toFixed(1)}Cr`;
+  if (val >= 100000) return `${(val / 100000).toFixed(1)}L`;
+  if (val >= 10000) return `${(val / 1000).toFixed(1)}K`;
+  return val.toLocaleString('en-IN');
+}
+
 function updateDashboardStats() {
   const activeCount = store.requests.length;
   const pairedCount = store.requests.reduce((sum, r) => sum + (r.joinedUsers ? r.joinedUsers.length : 0), 0);
   const totalFares = store.requests.reduce((sum, r) => {
-    const fareNum = Number(r.fare) || 0;
-    const spotsNum = Number(r.spots) || 0;
+    const fareNum = Math.min(Math.max(0, Number(r.fare) || 0), 10000);
+    const spotsNum = Math.min(Math.max(0, Number(r.spots) || 0), 10);
     return sum + (fareNum * spotsNum);
   }, 0);
 
   document.getElementById('statActiveRequests').textContent = activeCount;
   document.getElementById('statBuddiesPaired').textContent = pairedCount;
-  document.getElementById('statFaresSplit').textContent = `₹${totalFares.toLocaleString('en-IN')}`;
+  document.getElementById('statFaresSplit').textContent = `₹${formatStatCurrency(totalFares)}`;
 
   document.getElementById('badgeAllCount').textContent = activeCount;
   document.getElementById('badgeMyCount').textContent = store.userPostIds.size + store.savedIds.size;

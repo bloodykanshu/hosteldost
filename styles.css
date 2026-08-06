@@ -472,6 +472,7 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; outline: non
   gap: 0.85rem;
   min-width: 140px;
   flex: 1;
+  overflow: hidden;
 }
 
 .stat-icon-glow {
@@ -492,6 +493,8 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; outline: non
 .stat-info {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .stat-number {
@@ -499,6 +502,9 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; outline: non
   font-weight: 800;
   color: var(--text-primary);
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stat-label {

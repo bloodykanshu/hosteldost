@@ -143,7 +143,13 @@ app.delete('/api/auth/profile/:userId', async (req, res) => {
 app.get('/api/requests', async (req, res) => {
   try {
     const requests = await Request.find().sort({ createdAt: -1 });
-    res.json(requests);
+    // Sanitize any existing huge fares or bad numbers
+    const sanitizedRequests = requests.map(r => ({
+      ...r.toObject(),
+      fare: Math.min(Math.max(0, Number(r.fare) || 0), 10000),
+      spots: Math.min(Math.max(0, Number(r.spots) || 0), 10)
+    }));
+    res.json(sanitizedRequests);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching travel requests.', error: error.message });
   }
@@ -153,6 +159,9 @@ app.get('/api/requests', async (req, res) => {
 app.post('/api/requests', async (req, res) => {
   try {
     const { destination, category, time, mode, genderFilter, spots, fare, hostName, room, contact, description, userId } = req.body;
+
+    const sanitizedFare = Math.min(Math.max(0, Number(fare) || 0), 10000);
+    const sanitizedSpots = Math.min(Math.max(1, Number(spots) || 1), 10);
 
     const defaultCovers = [
       'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600',
@@ -167,8 +176,8 @@ app.post('/api/requests', async (req, res) => {
       time,
       mode,
       genderFilter: genderFilter || 'Any Gender',
-      spots,
-      fare,
+      spots: sanitizedSpots,
+      fare: sanitizedFare,
       hostName,
       room,
       contact,
