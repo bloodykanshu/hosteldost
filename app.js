@@ -577,7 +577,9 @@ function openDetailModal(reqId) {
 
     <div style="display:flex; gap:1rem; justify-content:flex-end;">
       <button class="btn-secondary closeModal" data-modal="tripDetailModal">Close</button>
-      <button class="btn-secondary" id="chatHostFromDetailBtn"><i class="fa-solid fa-comments"></i> Chat Host</button>
+      <button class="btn-secondary" id="chatHostFromDetailBtn" style="background:#25D366; color:#fff; border-color:#25D366; font-weight:700;">
+        <i class="fa-brands fa-whatsapp" style="font-size:1.1rem;"></i> Chat Host
+      </button>
       <button class="btn-primary-purple" id="requestJoinBtn" ${hasJoined || req.spots <= 0 ? 'disabled style="opacity:0.6; cursor:not-allowed;"' : ''}>
         <i class="fa-solid fa-${hasJoined ? 'check' : 'user-plus'}"></i> ${hasJoined ? 'Already Joined' : req.spots <= 0 ? 'Full' : 'Join Request'}
       </button>
@@ -591,8 +593,20 @@ function openDetailModal(reqId) {
   });
 
   document.getElementById('chatHostFromDetailBtn').addEventListener('click', () => {
-    closeModal('tripDetailModal');
-    openChatModal(req.hostName, req.room);
+    let rawContact = req.contact || '';
+    let digits = rawContact.replace(/\D/g, '');
+    if (digits.length === 10) {
+      digits = '91' + digits;
+    }
+
+    if (digits.length >= 10) {
+      const msg = `Hey ${req.hostName}! 👋 I saw your Hostel Buddiieess plan to "${req.destination}". I would like to join/coordinate with you!`;
+      const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
+      window.open(waUrl, '_blank');
+    } else {
+      closeModal('tripDetailModal');
+      openChatModal(req.hostName, req.room);
+    }
   });
 
   const joinBtn = document.getElementById('requestJoinBtn');
