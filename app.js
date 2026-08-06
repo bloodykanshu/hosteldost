@@ -419,11 +419,15 @@ function setupDashboardEventListeners() {
 function updateDashboardStats() {
   const activeCount = store.requests.length;
   const pairedCount = store.requests.reduce((sum, r) => sum + (r.joinedUsers ? r.joinedUsers.length : 0), 0);
-  const totalFares = store.requests.reduce((sum, r) => sum + (r.fare * r.spots), 0);
+  const totalFares = store.requests.reduce((sum, r) => {
+    const fareNum = Number(r.fare) || 0;
+    const spotsNum = Number(r.spots) || 0;
+    return sum + (fareNum * spotsNum);
+  }, 0);
 
   document.getElementById('statActiveRequests').textContent = activeCount;
   document.getElementById('statBuddiesPaired').textContent = pairedCount;
-  document.getElementById('statFaresSplit').textContent = `₹${totalFares}`;
+  document.getElementById('statFaresSplit').textContent = `₹${totalFares.toLocaleString('en-IN')}`;
 
   document.getElementById('badgeAllCount').textContent = activeCount;
   document.getElementById('badgeMyCount').textContent = store.userPostIds.size + store.savedIds.size;
