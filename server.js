@@ -230,5 +230,5 @@ app.get('*', (req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`🚀 HostelBuddy Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Hostel Buddiieess Server running on http://localhost:${PORT}`);
 });

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   HostelBuddy - App Frontend & MongoDB Atlas API Client
+   Hostel Buddiieess - App Frontend & MongoDB Atlas API Client
    ========================================================================== */
 
 const API_BASE = window.location.origin.includes('localhost')
@@ -8,7 +8,7 @@ const API_BASE = window.location.origin.includes('localhost')
 
 class HostelBuddyAuth {
   constructor() {
-    this.currentUser = JSON.parse(localStorage.getItem('hostelbuddy_current_user') || 'null');
+    this.currentUser = JSON.parse(localStorage.getItem('hostelbuddiieess_current_user') || localStorage.getItem('hostelbuddy_current_user') || 'null');
   }
 
   async register(name, email, phone, block, room, password) {
@@ -72,11 +72,12 @@ class HostelBuddyAuth {
 
   setCurrentUser(user) {
     this.currentUser = user;
-    localStorage.setItem('hostelbuddy_current_user', JSON.stringify(user));
+    localStorage.setItem('hostelbuddiieess_current_user', JSON.stringify(user));
   }
 
   logout() {
     this.currentUser = null;
+    localStorage.removeItem('hostelbuddiieess_current_user');
     localStorage.removeItem('hostelbuddy_current_user');
   }
 
@@ -88,8 +89,8 @@ class HostelBuddyAuth {
 class HostelBuddyStore {
   constructor() {
     this.requests = [];
-    this.savedIds = new Set(JSON.parse(localStorage.getItem('hostelbuddy_saved') || '[]'));
-    this.userPostIds = new Set(JSON.parse(localStorage.getItem('hostelbuddy_user_posts') || '[]'));
+    this.savedIds = new Set(JSON.parse(localStorage.getItem('hostelbuddiieess_saved') || localStorage.getItem('hostelbuddy_saved') || '[]'));
+    this.userPostIds = new Set(JSON.parse(localStorage.getItem('hostelbuddiieess_user_posts') || localStorage.getItem('hostelbuddy_user_posts') || '[]'));
     this.currentCategory = 'all';
     this.currentMode = 'all';
     this.activeTab = 'all';
@@ -109,16 +110,16 @@ class HostelBuddyStore {
       }
     } catch (err) {
       // Fallback to local storage if API is starting up
-      this.requests = JSON.parse(localStorage.getItem('hostelbuddy_real_requests') || '[]');
+      this.requests = JSON.parse(localStorage.getItem('hostelbuddiieess_real_requests') || localStorage.getItem('hostelbuddy_real_requests') || '[]');
     }
   }
 
   saveBookmarks() {
-    localStorage.setItem('hostelbuddy_saved', JSON.stringify(Array.from(this.savedIds)));
+    localStorage.setItem('hostelbuddiieess_saved', JSON.stringify(Array.from(this.savedIds)));
   }
 
   saveUserPosts() {
-    localStorage.setItem('hostelbuddy_user_posts', JSON.stringify(Array.from(this.userPostIds)));
+    localStorage.setItem('hostelbuddiieess_user_posts', JSON.stringify(Array.from(this.userPostIds)));
   }
 
   toggleSave(reqId) {
@@ -153,7 +154,7 @@ class HostelBuddyStore {
     const fallbackReq = { ...newReq, id: `req_${Date.now()}`, joinedUsers: [] };
     this.requests.unshift(fallbackReq);
     this.userPostIds.add(fallbackReq.id);
-    localStorage.setItem('hostelbuddy_real_requests', JSON.stringify(this.requests));
+    localStorage.setItem('hostelbuddiieess_real_requests', JSON.stringify(this.requests));
     this.saveUserPosts();
   }
 
@@ -187,7 +188,7 @@ class HostelBuddyStore {
       target.spots = Math.max(0, target.spots - 1);
       target.joinedUsers = target.joinedUsers || [];
       target.joinedUsers.push({ userId: user.id, name: user.name, room: user.room, joinedAt: new Date() });
-      localStorage.setItem('hostelbuddy_real_requests', JSON.stringify(this.requests));
+      localStorage.setItem('hostelbuddiieess_real_requests', JSON.stringify(this.requests));
       return target;
     }
   }
@@ -229,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initTheme() {
-  const savedTheme = localStorage.getItem('hostelbuddy_theme') || 'dark';
+  const savedTheme = localStorage.getItem('hostelbuddiieess_theme') || localStorage.getItem('hostelbuddy_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
 }
 
@@ -320,7 +321,7 @@ function setupAuthEventListeners() {
 
     try {
       await auth.register(name, email, phone, block, room, password);
-      showToast(`🎉 Account created! Welcome ${name}`);
+      showToast(`🎉 Account created! Welcome to Hostel Buddiieess, ${name}`);
       await checkAuthScreenState();
     } catch (err) {
       showToast(`⚠️ ${err.message}`);
@@ -333,7 +334,7 @@ function setupDashboardEventListeners() {
 
   document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
     if (!auth.currentUser) return;
-    const confirmDelete = confirm("⚠️ Are you sure you want to permanently delete your HostelBuddy profile? This will also remove your travel posts and joined entries from MongoDB Atlas.");
+    const confirmDelete = confirm("⚠️ Are you sure you want to permanently delete your Hostel Buddiieess profile? This will also remove your travel posts and joined entries from MongoDB Atlas.");
 
     if (confirmDelete) {
       const u = auth.currentUser;
@@ -348,7 +349,7 @@ function setupDashboardEventListeners() {
     const cur = document.documentElement.getAttribute('data-theme');
     const next = cur === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('hostelbuddy_theme', next);
+    localStorage.setItem('hostelbuddiieess_theme', next);
   });
 
   document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -690,6 +691,6 @@ function showToast(message) {
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transition = 'opacity 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
+    setTimeout(() => toast.remove(), 3500);
   }, 3500);
 }
