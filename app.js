@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Hostel Buddiieess - App Frontend & MongoDB Atlas API Client
+   SathChalo - App Frontend & MongoDB Atlas API Client
    ========================================================================== */
 
 const API_BASE = window.location.origin.includes('localhost')
@@ -8,7 +8,7 @@ const API_BASE = window.location.origin.includes('localhost')
 
 class HostelBuddyAuth {
   constructor() {
-    this.currentUser = JSON.parse(localStorage.getItem('hostelbuddiieess_current_user') || localStorage.getItem('hostelbuddy_current_user') || 'null');
+    this.currentUser = JSON.parse(localStorage.getItem('sathchalo_current_user') || localStorage.getItem('hostelbuddiieess_current_user') || localStorage.getItem('hostelbuddy_current_user') || 'null');
   }
 
   async register(name, email, phone, gender, block, room, password) {
@@ -27,7 +27,7 @@ class HostelBuddyAuth {
     } catch (err) {
       if (err.message && !err.message.includes('fetch')) throw err;
       // Fallback local auth if server API is offline
-      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'HB';
+      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'SC';
       const fallbackUser = { id: `usr_${Date.now()}`, name, email, phone, gender, block, room: `${block} - ${room}`, initials };
       this.setCurrentUser(fallbackUser);
       return fallbackUser;
@@ -72,11 +72,12 @@ class HostelBuddyAuth {
 
   setCurrentUser(user) {
     this.currentUser = user;
-    localStorage.setItem('hostelbuddiieess_current_user', JSON.stringify(user));
+    localStorage.setItem('sathchalo_current_user', JSON.stringify(user));
   }
 
   logout() {
     this.currentUser = null;
+    localStorage.removeItem('sathchalo_current_user');
     localStorage.removeItem('hostelbuddiieess_current_user');
     localStorage.removeItem('hostelbuddy_current_user');
   }
@@ -89,8 +90,8 @@ class HostelBuddyAuth {
 class HostelBuddyStore {
   constructor() {
     this.requests = [];
-    this.savedIds = new Set(JSON.parse(localStorage.getItem('hostelbuddiieess_saved') || localStorage.getItem('hostelbuddy_saved') || '[]'));
-    this.userPostIds = new Set(JSON.parse(localStorage.getItem('hostelbuddiieess_user_posts') || localStorage.getItem('hostelbuddy_user_posts') || '[]'));
+    this.savedIds = new Set(JSON.parse(localStorage.getItem('sathchalo_saved') || localStorage.getItem('hostelbuddiieess_saved') || localStorage.getItem('hostelbuddy_saved') || '[]'));
+    this.userPostIds = new Set(JSON.parse(localStorage.getItem('sathchalo_user_posts') || localStorage.getItem('hostelbuddiieess_user_posts') || localStorage.getItem('hostelbuddy_user_posts') || '[]'));
     this.currentCategory = 'all';
     this.currentMode = 'all';
     this.currentGenderFilter = 'all';
@@ -107,21 +108,23 @@ class HostelBuddyStore {
           ...item,
           id: item._id || item.id,
           joinedUsers: item.joinedUsers || [],
-          genderFilter: item.genderFilter || 'Any Gender'
+          genderFilter: item.genderFilter || 'Any Gender',
+          fare: Math.min(Math.max(0, Number(item.fare) || 0), 10000),
+          spots: Math.min(Math.max(0, Number(item.spots) || 0), 10)
         }));
       }
     } catch (err) {
       // Fallback to local storage if API is starting up
-      this.requests = JSON.parse(localStorage.getItem('hostelbuddiieess_real_requests') || localStorage.getItem('hostelbuddy_real_requests') || '[]');
+      this.requests = JSON.parse(localStorage.getItem('sathchalo_real_requests') || localStorage.getItem('hostelbuddiieess_real_requests') || '[]');
     }
   }
 
   saveBookmarks() {
-    localStorage.setItem('hostelbuddiieess_saved', JSON.stringify(Array.from(this.savedIds)));
+    localStorage.setItem('sathchalo_saved', JSON.stringify(Array.from(this.savedIds)));
   }
 
   saveUserPosts() {
-    localStorage.setItem('hostelbuddiieess_user_posts', JSON.stringify(Array.from(this.userPostIds)));
+    localStorage.setItem('sathchalo_user_posts', JSON.stringify(Array.from(this.userPostIds)));
   }
 
   toggleSave(reqId) {
@@ -156,7 +159,7 @@ class HostelBuddyStore {
     const fallbackReq = { ...newReq, id: `req_${Date.now()}`, joinedUsers: [] };
     this.requests.unshift(fallbackReq);
     this.userPostIds.add(fallbackReq.id);
-    localStorage.setItem('hostelbuddiieess_real_requests', JSON.stringify(this.requests));
+    localStorage.setItem('sathchalo_real_requests', JSON.stringify(this.requests));
     this.saveUserPosts();
   }
 
@@ -190,7 +193,7 @@ class HostelBuddyStore {
       target.spots = Math.max(0, target.spots - 1);
       target.joinedUsers = target.joinedUsers || [];
       target.joinedUsers.push({ userId: user.id, name: user.name, room: user.room, joinedAt: new Date() });
-      localStorage.setItem('hostelbuddiieess_real_requests', JSON.stringify(this.requests));
+      localStorage.setItem('sathchalo_real_requests', JSON.stringify(this.requests));
       return target;
     }
   }
@@ -235,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initTheme() {
-  const savedTheme = localStorage.getItem('hostelbuddiieess_theme') || localStorage.getItem('hostelbuddy_theme') || 'dark';
+  const savedTheme = localStorage.getItem('sathchalo_theme') || localStorage.getItem('hostelbuddy_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
 }
 
@@ -258,7 +261,7 @@ async function checkAuthScreenState() {
 function updateProfileUI() {
   if (!auth.currentUser) return;
   const u = auth.currentUser;
-  document.getElementById('userAvatarText').textContent = u.initials || 'HB';
+  document.getElementById('userAvatarText').textContent = u.initials || 'SC';
   document.getElementById('userNameText').innerHTML = `${u.name} <i class="fa-solid fa-chevron-down" style="font-size:0.65rem; color:var(--text-muted);"></i>`;
   document.getElementById('userRoomText').textContent = u.room;
 }
@@ -267,7 +270,7 @@ function openProfileModal() {
   if (!auth.currentUser) return;
   const u = auth.currentUser;
 
-  document.getElementById('modalProfileAvatar').textContent = u.initials || 'HB';
+  document.getElementById('modalProfileAvatar').textContent = u.initials || 'SC';
   document.getElementById('modalProfileName').textContent = u.name;
   document.getElementById('modalProfileEmail').textContent = u.email || 'Student Account';
   document.getElementById('modalProfilePhone').innerHTML = `<i class="fa-solid fa-phone"></i> +91 ${u.phone || '9876543210'}`;
@@ -328,7 +331,7 @@ function setupAuthEventListeners() {
 
     try {
       await auth.register(name, email, phone, gender, block, room, password);
-      showToast(`🎉 Account created! Welcome to Hostel Buddiieess, ${name}`);
+      showToast(`🎉 Account created! Welcome to SathChalo, ${name}`);
       await checkAuthScreenState();
     } catch (err) {
       showToast(`⚠️ ${err.message}`);
@@ -341,7 +344,7 @@ function setupDashboardEventListeners() {
 
   document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
     if (!auth.currentUser) return;
-    const confirmDelete = confirm("⚠️ Are you sure you want to permanently delete your Hostel Buddiieess profile? This will also remove your travel posts and joined entries from MongoDB Atlas.");
+    const confirmDelete = confirm("⚠️ Are you sure you want to permanently delete your SathChalo profile? This will also remove your travel posts and joined entries from MongoDB Atlas.");
 
     if (confirmDelete) {
       const u = auth.currentUser;
@@ -356,7 +359,7 @@ function setupDashboardEventListeners() {
     const cur = document.documentElement.getAttribute('data-theme');
     const next = cur === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('hostelbuddiieess_theme', next);
+    localStorage.setItem('sathchalo_theme', next);
   });
 
   document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -642,7 +645,7 @@ function openDetailModal(reqId) {
     }
 
     if (digits.length >= 10) {
-      const msg = `Hey ${req.hostName}! 👋 I saw your Hostel Buddiieess plan to "${req.destination}". I would like to join/coordinate with you!`;
+      const msg = `Hey ${req.hostName}! 👋 I saw your SathChalo plan to "${req.destination}". I would like to join/coordinate with you!`;
       const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
       window.open(waUrl, '_blank');
     } else {
@@ -687,8 +690,8 @@ async function handlePostSubmit(e) {
     time,
     mode,
     genderFilter,
-    spots,
-    fare,
+    spots: Math.min(Math.max(1, spots || 1), 10),
+    fare: Math.min(Math.max(0, fare || 0), 10000),
     hostName: user.name,
     room: user.room,
     contact: user.phone || user.email,
