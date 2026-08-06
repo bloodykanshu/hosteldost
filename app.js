@@ -449,7 +449,24 @@ function triggerEmergencySOS() {
     return;
   }
 
-  const emergencyMessage = `🚨 EMERGENCY ALERT! I need immediate help!\n\nName: ${u.name}\nRoom: ${u.room}\nPhone: ${u.phone}\nSent via SathChalo Hostel App SOS.`;
+  // Find active or joined trip for the current user
+  const currentTrip = store.requests.find(r => {
+    const isHost = r.userId === u.id || (r.hostName === u.name && r.room === u.room);
+    const isJoined = (r.joinedUsers || []).some(j => j.userId === u.id || (j.name === u.name && j.room === u.room));
+    return isHost || isJoined;
+  });
+
+  let tripDetailsText = '';
+  if (currentTrip) {
+    const companionsList = [
+      `1. ${currentTrip.hostName} (Host) - ${currentTrip.room}`,
+      ...(currentTrip.joinedUsers || []).map((j, idx) => `${idx + 2}. ${j.name} - ${j.room}`)
+    ];
+
+    tripDetailsText = `\n\n📍 CURRENT TRIP DETAILS:\n• Destination: ${currentTrip.destination}\n• Category: ${currentTrip.category}\n• Mode: ${currentTrip.mode}\n• Time: ${currentTrip.time}\n\n👥 MEMBERS IN THIS TRIP (${companionsList.length}):\n${companionsList.join('\n')}`;
+  }
+
+  const emergencyMessage = `🚨 EMERGENCY ALERT! I need immediate help!\n\nStudent: ${u.name}\nRoom: ${u.room}\nPhone: ${u.phone}${tripDetailsText}\n\nSent via SathChalo Hostel App SOS.`;
   const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent(emergencyMessage)}`;
 
   showToast("🚨 Opening WhatsApp Emergency Alert to your contact...");
