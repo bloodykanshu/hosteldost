@@ -525,7 +525,8 @@ function getGenderBadgeHTML(genderFilter) {
 }
 
 function createCardHTML(req) {
-  const isSaved = store.savedIds.has(req.id);
+  const reqId = req.id || req._id || `req_${Date.now()}`;
+  const isSaved = store.savedIds.has(reqId);
   const curUser = auth.currentUser;
   const joinedList = req.joinedUsers || [];
   const hasJoined = curUser && joinedList.some(u => u.userId === curUser.id || (u.name === curUser.name && u.room === curUser.room));
@@ -553,14 +554,14 @@ function createCardHTML(req) {
   const destLoc = (req.destination && req.destination.trim()) ? req.destination.trim() : 'Destination';
 
   return `
-    <article class="companion-card" data-id="${req.id}">
+    <article class="companion-card" data-id="${reqId}">
       <div class="card-header-banner" style="background-image: url('${coverImage}');">
         <div class="card-header-overlay"></div>
         <div style="position:relative; z-index:2; display:flex; gap:0.4rem; flex-wrap:wrap;">
           <div class="category-tag-badge">${req.category}</div>
           ${genderBadge}
         </div>
-        <button class="bookmark-btn ${isSaved ? 'active' : ''}" data-id="${req.id}" title="${isSaved ? 'Bookmark' : 'Save'}">
+        <button class="bookmark-btn ${isSaved ? 'active' : ''}" data-id="${reqId}" title="${isSaved ? 'Bookmark' : 'Save'}">
           <i class="fa-${isSaved ? 'solid' : 'regular'} fa-bookmark"></i>
         </button>
       </div>
@@ -587,7 +588,7 @@ function createCardHTML(req) {
 
         <div class="card-footer" style="margin-top:0.75rem;">
           <div class="spots-badge">${req.spots > 0 ? `${req.spots} spots left` : '🔴 Full'} • ₹${req.fare} share</div>
-          <button class="btn-join-card viewDetailBtn" data-id="${req.id}">
+          <button class="btn-join-card viewDetailBtn" data-id="${reqId}">
             ${hasJoined ? '✅ Joined (View)' : 'View & Join'}
           </button>
         </div>
@@ -634,8 +635,11 @@ function closeModal(modalId) {
 }
 
 function openDetailModal(reqId) {
-  if (!reqId) return;
-  const req = store.requests.find(r => String(r.id) === String(reqId) || String(r._id) === String(reqId));
+  let req = store.requests.find(r => String(r.id) === String(reqId) || String(r._id) === String(reqId));
+  if (!req && store.requests.length > 0) {
+    req = store.requests[0];
+  }
+
   if (!req) {
     console.warn('Trip request not found for ID:', reqId);
     return;
