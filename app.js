@@ -535,10 +535,13 @@ function createCardHTML(req) {
     : '';
 
   const genderBadge = getGenderBadgeHTML(req.genderFilter);
+  const coverImage = req.coverImage || 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop';
+  const hostAvatar = req.hostAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.hostName || 'Student')}&background=8B5CF6&color=fff&bold=true`;
+  const pickupLoc = req.pickup || 'Hostel Gate';
 
   return `
     <article class="companion-card" data-id="${req.id}">
-      <div class="card-header-banner" style="background-image: url('${req.coverImage}');">
+      <div class="card-header-banner" style="background-image: url('${coverImage}');">
         <div class="card-header-overlay"></div>
         <div style="position:relative; z-index:2; display:flex; gap:0.4rem; flex-wrap:wrap;">
           <div class="category-tag-badge">${req.category}</div>
@@ -551,17 +554,16 @@ function createCardHTML(req) {
 
       <div class="card-body">
         <div class="host-row">
-          <img src="${req.hostAvatar}" alt="${req.hostName}" class="host-avatar">
+          <img src="${hostAvatar}" alt="${req.hostName}" class="host-avatar" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(req.hostName || 'Student')}&background=8B5CF6&color=fff&bold=true';">
           <div class="host-info">
             <span class="host-name">${req.hostName}</span>
             <span class="room-badge"><i class="fa-solid fa-building"></i> ${req.room}</span>
           </div>
         </div>
 
-        <div style="font-size:0.75rem; color:var(--accent-purple); font-weight:700; margin-bottom:0.2rem; display:flex; align-items:center; gap:0.3rem;">
-          <i class="fa-solid fa-location-crosshairs"></i> ${req.pickup || 'Hostel Gate'} <i class="fa-solid fa-arrow-right-long" style="font-size:0.7rem;"></i>
-        </div>
-        <h3 class="destination-title">${req.destination}</h3>
+        <h3 class="destination-title" style="font-size:1.05rem; font-weight:800; color:#FFF; margin:0.4rem 0 0.75rem; word-break:break-word;">
+          📍 ${pickupLoc} <span style="color:var(--accent-purple); font-weight:900;">➔</span> ${req.destination}
+        </h3>
 
         <div class="trip-meta-row">
           <div class="meta-item"><i class="fa-regular fa-clock"></i> <span>${req.time}</span></div>
