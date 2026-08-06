@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const requestSchema = new mongoose.Schema({
+  pickup: { type: String, default: 'Hostel Gate' },
   destination: { type: String, required: true },
   category: { type: String, required: true },
   time: { type: String, required: true },

@@ -147,9 +147,9 @@ app.delete('/api/auth/profile/:userId', async (req, res) => {
 app.get('/api/requests', async (req, res) => {
   try {
     const requests = await Request.find().sort({ createdAt: -1 });
-    // Sanitize existing requests
     const sanitizedRequests = requests.map(r => ({
       ...r.toObject(),
+      pickup: r.pickup || 'Hostel Gate',
       fare: Math.min(Math.max(0, Number(r.fare) || 0), 10000),
       spots: Math.min(Math.max(0, Number(r.spots) || 0), 10)
     }));
@@ -162,7 +162,7 @@ app.get('/api/requests', async (req, res) => {
 // POST /api/requests
 app.post('/api/requests', async (req, res) => {
   try {
-    const { destination, category, time, mode, genderFilter, spots, fare, hostName, room, contact, description, userId } = req.body;
+    const { pickup, destination, category, time, mode, genderFilter, spots, fare, hostName, room, contact, description, userId } = req.body;
 
     const sanitizedFare = Math.min(Math.max(0, Number(fare) || 0), 10000);
     const sanitizedSpots = Math.min(Math.max(1, Number(spots) || 1), 10);
@@ -175,6 +175,7 @@ app.post('/api/requests', async (req, res) => {
     ];
 
     const newRequest = new Request({
+      pickup: pickup || 'Hostel Gate',
       destination,
       category,
       time,

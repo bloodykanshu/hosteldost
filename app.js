@@ -558,6 +558,9 @@ function createCardHTML(req) {
           </div>
         </div>
 
+        <div style="font-size:0.75rem; color:var(--accent-purple); font-weight:700; margin-bottom:0.2rem; display:flex; align-items:center; gap:0.3rem;">
+          <i class="fa-solid fa-location-crosshairs"></i> ${req.pickup || 'Hostel Gate'} <i class="fa-solid fa-arrow-right-long" style="font-size:0.7rem;"></i>
+        </div>
         <h3 class="destination-title">${req.destination}</h3>
 
         <div class="trip-meta-row">
@@ -614,7 +617,7 @@ function openDetailModal(reqId) {
   const joinedList = req.joinedUsers || [];
   const hasJoined = curUser && joinedList.some(u => u.userId === curUser.id || (u.name === curUser.name && u.room === curUser.room));
 
-  modalTitle.innerHTML = `<i class="fa-solid fa-location-dot" style="color:var(--accent-purple);"></i> ${req.destination}`;
+  modalTitle.innerHTML = `<i class="fa-solid fa-location-dot" style="color:var(--accent-purple);"></i> ${req.pickup || 'Hostel Gate'} ➔ ${req.destination}`;
 
   const joinedBuddiesListHTML = joinedList.length > 0
     ? `<div style="background:var(--bg-surface); padding:0.85rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1rem;">
@@ -715,7 +718,8 @@ async function handlePostSubmit(e) {
   e.preventDefault();
   if (!auth.currentUser) return;
 
-  const destination = document.getElementById('postDestination').value;
+  const pickup = document.getElementById('postPickup').value.trim();
+  const destination = document.getElementById('postDestination').value.trim();
   const category = document.getElementById('postCategory').value;
   const time = document.getElementById('postTime').value;
   const mode = document.getElementById('postMode').value;
@@ -727,6 +731,7 @@ async function handlePostSubmit(e) {
   const user = auth.currentUser;
 
   const newReq = {
+    pickup: pickup || 'Hostel Gate',
     destination,
     category,
     time,
