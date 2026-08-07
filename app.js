@@ -321,70 +321,79 @@ function setupAuthEventListeners() {
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
 
-  tabLogin.addEventListener('click', () => {
-    tabLogin.classList.add('active');
-    tabRegister.classList.remove('active');
-    loginForm.style.display = 'block';
-    registerForm.style.display = 'none';
-  });
+  if (tabLogin && tabRegister && loginForm && registerForm) {
+    tabLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      tabLogin.classList.add('active');
+      tabRegister.classList.remove('active');
+      loginForm.style.display = 'block';
+      registerForm.style.display = 'none';
+    });
 
-  tabRegister.addEventListener('click', () => {
-    tabRegister.classList.add('active');
-    tabLogin.classList.remove('active');
-    registerForm.style.display = 'block';
-    loginForm.style.display = 'none';
-  });
+    tabRegister.addEventListener('click', (e) => {
+      e.preventDefault();
+      tabRegister.classList.add('active');
+      tabLogin.classList.remove('active');
+      registerForm.style.display = 'block';
+      loginForm.style.display = 'none';
+    });
+  }
 
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
 
-    try {
-      await auth.login(email, password);
-      showToast(`Welcome back, ${auth.currentUser.name}! 👋`);
-      await checkAuthScreenState();
-    } catch (err) {
-      showToast(`⚠️ ${err.message}`);
-    }
-  });
+      try {
+        await auth.login(email, password);
+        showToast(`Welcome back, ${auth.currentUser.name}! 👋`);
+        await checkAuthScreenState();
+      } catch (err) {
+        showToast(`⚠️ ${err.message}`);
+      }
+    });
+  }
 
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('regName').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
-    const phone = document.getElementById('regPhone').value.trim();
-    const emergencyPhone = document.getElementById('regEmergencyPhone').value.trim();
-    const gender = document.getElementById('regGender').value;
-    const block = document.getElementById('regBlock').value;
-    const room = document.getElementById('regRoom').value.trim();
-    const password = document.getElementById('regPassword').value;
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
+      const emergencyPhone = document.getElementById('regEmergencyPhone').value.trim();
+      const gender = document.getElementById('regGender').value;
+      const block = document.getElementById('regBlock').value;
+      const room = document.getElementById('regRoom').value.trim();
+      const password = document.getElementById('regPassword').value;
 
-    if (phone.length < 10) {
-      showToast('⚠️ Please enter a valid 10-digit mobile number.');
-      return;
-    }
+      if (phone.length < 10) {
+        showToast('⚠️ Please enter a valid 10-digit mobile number.');
+        return;
+      }
 
-    if (emergencyPhone.length < 10) {
-      showToast('⚠️ Please enter a valid 10-digit emergency contact number.');
-      return;
-    }
+      if (emergencyPhone.length < 10) {
+        showToast('⚠️ Please enter a valid 10-digit emergency contact number.');
+        return;
+      }
 
-    try {
-      await auth.register(name, email, phone, emergencyPhone, gender, block, room, password);
-      showToast(`🎉 Account created! Welcome to SathChalo, ${name}`);
-      await checkAuthScreenState();
-    } catch (err) {
-      showToast(`⚠️ ${err.message}`);
-    }
-  });
+      try {
+        await auth.register(name, email, phone, emergencyPhone, gender, block, room, password);
+        showToast(`🎉 Account created! Welcome to SathChalo, ${name}`);
+        await checkAuthScreenState();
+      } catch (err) {
+        showToast(`⚠️ ${err.message}`);
+      }
+    });
+  }
 }
 
 function setupDashboardEventListeners() {
-  document.getElementById('profilePillBtn').addEventListener('click', openProfileModal);
+  const profilePillBtn = document.getElementById('profilePillBtn');
+  if (profilePillBtn) profilePillBtn.addEventListener('click', openProfileModal);
 
-  // SOS ALERT BUTTON CLICK HANDLER
-  document.getElementById('sosBtn').addEventListener('click', triggerEmergencySOS);
+  const sosBtn = document.getElementById('sosBtn');
+  if (sosBtn) sosBtn.addEventListener('click', triggerEmergencySOS);
 
   const deleteBtn = document.getElementById('deleteAccountBtn');
   if (deleteBtn) {
@@ -402,24 +411,34 @@ function setupDashboardEventListeners() {
     });
   }
 
-  document.getElementById('themeToggleBtn').addEventListener('click', () => {
-    const cur = document.documentElement.getAttribute('data-theme');
-    const next = cur === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('sathchalo_theme', next);
-  });
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('sathchalo_theme', next);
+    });
+  }
 
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    auth.logout();
-    showToast("Signed out successfully.");
-    checkAuthScreenState();
-  });
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      auth.logout();
+      showToast("Signed out successfully.");
+      checkAuthScreenState();
+    });
+  }
 
-  document.getElementById('openPostTripBtn').addEventListener('click', () => openModal('postTripModal'));
+  const openPostTripBtn = document.getElementById('openPostTripBtn');
+  if (openPostTripBtn) openPostTripBtn.addEventListener('click', () => openModal('postTripModal'));
 
-  document.getElementById('safetyBtn').addEventListener('click', () => {
-    showToast("🛡️ Safety Guidelines: Always verify room numbers and coordinate via room chat.");
-  });
+  const safetyBtn = document.getElementById('safetyBtn');
+  if (safetyBtn) {
+    safetyBtn.addEventListener('click', () => {
+      showToast("🛡️ Safety Guidelines: Always verify room numbers and coordinate via room chat.");
+    });
+  }
 
   document.querySelectorAll('.tab-pill-btn').forEach(btn => {
     btn.addEventListener('click', () => {
