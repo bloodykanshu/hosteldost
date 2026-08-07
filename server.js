@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Serve static frontend files (styles.css, app.js, index.html, assets)
+// Serve static frontend files
 app.use(express.static(path.join(__dirname)));
 
 // Connect to MongoDB Atlas Cloud Database
@@ -39,11 +39,51 @@ const DEFAULT_COVERS = {
   '🏥 Medical & Urgent': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop'
 };
 
+// 24-Hour Edit & Delete Lock Rule Verification
+function canModifyTripServer(reqItem) {
+  if (!reqItem || !reqItem.time) return true;
+  try {
+    const timeStr = reqItem.time || '';
+    const parts = timeStr.split(',');
+    if (parts.length >= 2) {
+      const datePart = parts[0].trim().toLowerCase();
+      const timePart = parts[1].trim();
+
+      const today = new Date();
+      let departureDate = new Date();
+
+      if (datePart === 'today') {
+        departureDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      } else if (datePart === 'tomorrow') {
+        departureDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      } else {
+        departureDate = new Date(parts[0].trim());
+      }
+
+      const timeMatch = timePart.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (timeMatch && !isNaN(departureDate.getTime())) {
+        let hrs = parseInt(timeMatch[1], 10);
+        const mins = parseInt(timeMatch[2], 10);
+        const ampm = timeMatch[3].toUpperCase();
+        if (ampm === 'PM' && hrs < 12) hrs += 12;
+        if (ampm === 'AM' && hrs === 12) hrs = 0;
+        departureDate.setHours(hrs, mins, 0, 0);
+      }
+
+      if (!isNaN(departureDate.getTime())) {
+        const diffMs = departureDate.getTime() - Date.now();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        return diffHours >= 24;
+      }
+    }
+  } catch (e) {}
+  return true;
+}
+
 /* ==========================================================================
    AUTH ROUTES
    ========================================================================== */
 
-// POST /api/auth/register - Registration with Emergency Phone & Gender Selection
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, phone, emergencyPhone, gender, block, room, password } = req.body;
@@ -97,7 +137,6 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -130,7 +169,6 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// DELETE /api/auth/profile/:userId - Permanently Delete Account
 app.delete('/api/auth/profile/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -152,7 +190,6 @@ app.delete('/api/auth/profile/:userId', async (req, res) => {
    TRAVEL REQUEST ROUTES
    ========================================================================== */
 
-// GET /api/requests
 app.get('/api/requests', async (req, res) => {
   try {
     const requests = await Request.find().sort({ createdAt: -1 });
@@ -177,7 +214,6 @@ app.get('/api/requests', async (req, res) => {
   }
 });
 
-// POST /api/requests - Post new travel plan
 app.post('/api/requests', async (req, res) => {
   try {
     const { pickup, destination, category, time, mode, genderFilter, spots, fare, hostName, room, contact, description, userId } = req.body;
@@ -217,7 +253,7 @@ app.post('/api/requests', async (req, res) => {
   }
 });
 
-// PUT /api/requests/:id - Host edits a travel request
+// PUT /api/requests/:id - Host edits a travel request (with 24-hour lock check)
 app.put('/api/requests/:id', async (req, res) => {
   try {
     const requestId = req.params.id;
@@ -230,6 +266,11 @@ app.put('/api/requests/:id', async (req, res) => {
 
     if (userId && reqItem.userId && reqItem.userId !== userId) {
       return res.status(403).json({ message: 'Only the host can edit this travel request.' });
+    }
+
+    // Verify 24-Hour Policy Lock
+    if (!canModifyTripServer(reqItem)) {
+      return res.status(400).json({ message: '🔒 Modification locked: Trips within 24 hours of departure cannot be edited.' });
     }
 
     const sanitizedFare = Math.min(Math.max(0, Number(fare) || 0), 10000);
@@ -255,7 +296,7 @@ app.put('/api/requests/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/requests/:id - Host deletes a travel request
+// DELETE /api/requests/:id - Host deletes a travel request (with 24-hour lock check)
 app.delete('/api/requests/:id', async (req, res) => {
   try {
     const requestId = req.params.id;
@@ -270,6 +311,11 @@ app.delete('/api/requests/:id', async (req, res) => {
       return res.status(403).json({ message: 'Only the host can delete this travel request.' });
     }
 
+    // Verify 24-Hour Policy Lock
+    if (!canModifyTripServer(reqItem)) {
+      return res.status(400).json({ message: '🔒 Modification locked: Trips within 24 hours of departure cannot be deleted.' });
+    }
+
     await Request.findByIdAndDelete(requestId);
     res.json({ message: 'Travel request deleted successfully!' });
   } catch (error) {
@@ -277,7 +323,6 @@ app.delete('/api/requests/:id', async (req, res) => {
   }
 });
 
-// POST /api/requests/:id/join - Join a trip & decrement available spots in MongoDB Atlas
 app.post('/api/requests/:id/join', async (req, res) => {
   try {
     const requestId = req.params.id;
@@ -311,7 +356,6 @@ app.post('/api/requests/:id/join', async (req, res) => {
   }
 });
 
-// POST /api/requests/:id/remove-companion - Host removes a joined companion from a trip
 app.post('/api/requests/:id/remove-companion', async (req, res) => {
   try {
     const requestId = req.params.id;
@@ -322,7 +366,6 @@ app.post('/api/requests/:id/remove-companion', async (req, res) => {
       return res.status(404).json({ message: 'Travel request not found.' });
     }
 
-    // Check host authority if hostUserId is provided
     if (hostUserId && reqItem.userId && reqItem.userId !== hostUserId) {
       return res.status(403).json({ message: 'Only the host can remove companions from this trip.' });
     }
@@ -349,7 +392,6 @@ app.post('/api/requests/:id/remove-companion', async (req, res) => {
   }
 });
 
-// Fallback route for non-API web pages
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ message: 'API Endpoint Not Found' });
@@ -362,7 +404,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start Server
 app.listen(PORT, () => {
   console.log(`🚀 SathChalo Server running on http://localhost:${PORT}`);
 });

@@ -778,6 +778,51 @@ function formatDepartureDateTime(dateStr, timeStr) {
   return `${dateLabel}, ${formattedTime}`;
 }
 
+function canHostModifyTrip(req) {
+  if (!req || !req.time) return true;
+
+  try {
+    const timeStr = req.time || '';
+    const parts = timeStr.split(',');
+    if (parts.length >= 2) {
+      const datePart = parts[0].trim().toLowerCase();
+      const timePart = parts[1].trim();
+
+      const today = new Date();
+      let departureDate = new Date();
+
+      if (datePart === 'today') {
+        departureDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      } else if (datePart === 'tomorrow') {
+        departureDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      } else {
+        departureDate = new Date(parts[0].trim());
+      }
+
+      const timeMatch = timePart.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (timeMatch && !isNaN(departureDate.getTime())) {
+        let hrs = parseInt(timeMatch[1], 10);
+        const mins = parseInt(timeMatch[2], 10);
+        const ampm = timeMatch[3].toUpperCase();
+        if (ampm === 'PM' && hrs < 12) hrs += 12;
+        if (ampm === 'AM' && hrs === 12) hrs = 0;
+        departureDate.setHours(hrs, mins, 0, 0);
+      }
+
+      if (!isNaN(departureDate.getTime())) {
+        const now = new Date();
+        const diffMs = departureDate.getTime() - now.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        return diffHours >= 24;
+      }
+    }
+  } catch (err) {
+    console.warn('Date calculation fallback:', err);
+  }
+
+  return true;
+}
+
 function openDetailModal(reqId) {
   const req = store.requests.find(r => r.id === reqId || r._id === reqId);
   if (!req) return;
@@ -785,11 +830,12 @@ function openDetailModal(reqId) {
   const modalTitle = document.getElementById('modalTripTitle');
   const modalBody = document.getElementById('modalTripBody');
   const curUser = auth.currentUser;
+  const hasJoined = curUser ? store.hasUserJoined(req.id, curUser) : false;
   const joinedList = req.joinedUsers || [];
-  const hasJoined = curUser && joinedList.some(u => u.userId === curUser.id || (u.name === curUser.name && u.room === curUser.room));
 
   // Determine if current logged-in user is the Host of this trip
   const isHost = curUser && (req.userId === curUser.id || (req.hostName === curUser.name && req.room === curUser.room));
+  const canModify = canHostModifyTrip(req);
 
   modalTitle.innerHTML = `<i class="fa-solid fa-location-dot" style="color:var(--accent-purple);"></i> ${req.destination}`;
 
@@ -823,6 +869,12 @@ function openDetailModal(reqId) {
       </div>
     </div>
 
+    ${isHost && !canModify ? `
+      <div style="background:rgba(239, 68, 68, 0.12); color:#EF4444; padding:0.65rem 0.85rem; border-radius:var(--radius-md); border:1px solid rgba(239, 68, 68, 0.35); font-size:0.82rem; font-weight:700; margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
+        <i class="fa-solid fa-lock" style="font-size:1rem;"></i> 🔒 24-Hour Policy Lock: Departure is within 24 hours. Edit & Delete are locked.
+      </div>
+    ` : ''}
+
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; padding-bottom:1rem; border-bottom:1px solid var(--border-color);">
       <div style="display:flex; align-items:center; gap:0.75rem;">
         <img src="${req.hostAvatar}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
@@ -852,11 +904,11 @@ function openDetailModal(reqId) {
     <div style="display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:flex-end;">
       <button class="btn-secondary closeModal" data-modal="tripDetailModal">Close</button>
       ${isHost ? `
-        <button class="btn-secondary" id="editTripBtn" style="background:rgba(139,92,246,0.15); color:var(--accent-purple); border-color:rgba(139,92,246,0.35); font-weight:700;">
-          <i class="fa-solid fa-pen-to-square"></i> Edit
+        <button class="btn-secondary" id="editTripBtn" ${!canModify ? 'disabled style="opacity:0.45; cursor:not-allowed; background:rgba(255,255,255,0.05); color:var(--text-muted); border-color:var(--border-color);"' : 'style="background:rgba(139,92,246,0.15); color:var(--accent-purple); border-color:rgba(139,92,246,0.35); font-weight:700;"'}>
+          <i class="fa-solid fa-${canModify ? 'pen-to-square' : 'lock'}"></i> Edit
         </button>
-        <button class="btn-secondary" id="deleteTripBtn" style="background:rgba(239,68,68,0.15); color:#EF4444; border-color:rgba(239,68,68,0.35); font-weight:700;">
-          <i class="fa-solid fa-trash-can"></i> Delete
+        <button class="btn-secondary" id="deleteTripBtn" ${!canModify ? 'disabled style="opacity:0.45; cursor:not-allowed; background:rgba(255,255,255,0.05); color:var(--text-muted); border-color:var(--border-color);"' : 'style="background:rgba(239,68,68,0.15); color:#EF4444; border-color:rgba(239,68,68,0.35); font-weight:700;"'}>
+          <i class="fa-solid fa-${canModify ? 'trash-can' : 'lock'}"></i> Delete
         </button>
       ` : ''}
       <button class="btn-secondary" id="chatHostFromDetailBtn" style="background:#25D366; color:#fff; border-color:#25D366; font-weight:700;">
@@ -876,12 +928,23 @@ function openDetailModal(reqId) {
 
   const editTripBtn = document.getElementById('editTripBtn');
   if (editTripBtn) {
-    editTripBtn.addEventListener('click', () => openEditTripModal(req));
+    editTripBtn.addEventListener('click', () => {
+      if (!canHostModifyTrip(req)) {
+        showToast('🔒 24-Hour Cutoff: Trips leaving in less than 24 hours cannot be edited.');
+        return;
+      }
+      openEditTripModal(req);
+    });
   }
 
   const deleteTripBtn = document.getElementById('deleteTripBtn');
   if (deleteTripBtn) {
     deleteTripBtn.addEventListener('click', async () => {
+      if (!canHostModifyTrip(req)) {
+        showToast('🔒 24-Hour Cutoff: Trips leaving in less than 24 hours cannot be deleted.');
+        return;
+      }
+
       const confirmDelete = confirm(`⚠️ Are you sure you want to permanently delete your travel plan to "${req.destination}"?`);
       if (confirmDelete) {
         try {
