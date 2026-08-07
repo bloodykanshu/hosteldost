@@ -336,19 +336,26 @@
 
         <div class="form-row">
           <div class="form-group half">
-            <label for="postTime">Departure Time</label>
-            <input type="text" id="postTime" placeholder="e.g. Today, 6:00 PM" required>
+            <label for="postDate"><i class="fa-regular fa-calendar"></i> Departure Date</label>
+            <input type="date" id="postDate" required>
           </div>
 
+          <div class="form-group half">
+            <label for="postTime"><i class="fa-regular fa-clock"></i> Departure Time</label>
+            <input type="time" id="postTime" required>
+          </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group half">
             <label for="postSpots">Available Spots</label>
             <input type="number" id="postSpots" min="1" max="10" value="3" required>
           </div>
-        </div>
 
-        <div class="form-group">
-          <label for="postFare">Estimated Share per Person (₹)</label>
-          <input type="number" id="postFare" min="0" max="10000" placeholder="e.g. 50" required>
+          <div class="form-group half">
+            <label for="postFare">Estimated Share per Person (₹)</label>
+            <input type="number" id="postFare" min="0" max="10000" placeholder="e.g. 50" required>
+          </div>
         </div>
 
         <div class="form-group">

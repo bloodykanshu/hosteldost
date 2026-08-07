@@ -624,8 +624,6 @@ function attachCardEvents(parent) {
       renderRequests();
       showToast(store.savedIds.has(reqId) ? 'Request bookmarked!' : 'Removed from bookmarks');
     });
-  });
-
   parent.querySelectorAll('.viewDetailBtn').forEach(btn => {
     btn.addEventListener('click', () => openDetailModal(btn.dataset.id));
   });
@@ -633,12 +631,61 @@ function attachCardEvents(parent) {
 
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) modal.classList.add('active');
+  if (modal) {
+    modal.classList.add('active');
+    if (modalId === 'postTripModal') {
+      const dateInput = document.getElementById('postDate');
+      const timeInput = document.getElementById('postTime');
+      if (dateInput && !dateInput.value) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        dateInput.value = todayStr;
+      }
+      if (timeInput && !timeInput.value) {
+        const now = new Date();
+        const hrs = String(now.getHours()).padStart(2, '0');
+        const mins = String(now.getMinutes()).padStart(2, '0');
+        timeInput.value = `${hrs}:${mins}`;
+      }
+    }
+  }
 }
 
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.classList.remove('active');
+}
+
+function formatDepartureDateTime(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return 'Today, 6:00 PM';
+
+  const parts = timeStr.split(':');
+  let hrs = parseInt(parts[0], 10);
+  const mins = parts[1] || '00';
+  const ampm = hrs >= 12 ? 'PM' : 'AM';
+  hrs = hrs % 12;
+  hrs = hrs ? hrs : 12;
+  const formattedTime = `${hrs}:${mins} ${ampm}`;
+
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const targetDate = new Date(year, month - 1, day);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  let dateLabel = '';
+  if (targetDate.toDateString() === today.toDateString()) {
+    dateLabel = 'Today';
+  } else if (targetDate.toDateString() === tomorrow.toDateString()) {
+    dateLabel = 'Tomorrow';
+  } else {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    dateLabel = `${day} ${months[targetDate.getMonth()]} ${targetDate.getFullYear()}`;
+  }
+
+  return `${dateLabel}, ${formattedTime}`;
 }
 
 function openDetailModal(reqId) {
@@ -658,7 +705,7 @@ function openDetailModal(reqId) {
 
   const joinedBuddiesListHTML = joinedList.length > 0
     ? `<div style="background:var(--bg-surface); padding:0.85rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1rem;">
-        <h5 style="margin-bottom:0.5rem; color:var(--accent-purple); display:flex; align-items:center; justify-space-between;">
+        <h5 style="margin-bottom:0.5rem; color:var(--accent-purple); display:flex; align-items:center; justify-content:space-between;">
           <span><i class="fa-solid fa-users"></i> Joined Companions (${joinedList.length}):</span>
           ${isHost ? '<span style="font-size:0.75rem; color:var(--accent-purple); font-weight:600;"><i class="fa-solid fa-crown"></i> You are Host</span>' : ''}
         </h5>
@@ -789,7 +836,10 @@ async function handlePostSubmit(e) {
 
   const destination = document.getElementById('postDestination').value;
   const category = document.getElementById('postCategory').value;
-  const time = document.getElementById('postTime').value;
+  const rawDate = document.getElementById('postDate').value;
+  const rawTime = document.getElementById('postTime').value;
+  const formattedTime = formatDepartureDateTime(rawDate, rawTime);
+
   const mode = document.getElementById('postMode').value;
   const genderFilter = document.getElementById('postGenderFilter').value;
   const spots = parseInt(document.getElementById('postSpots').value);
@@ -801,7 +851,7 @@ async function handlePostSubmit(e) {
   const newReq = {
     destination,
     category,
-    time,
+    time: formattedTime,
     mode,
     genderFilter,
     spots,
