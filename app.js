@@ -386,18 +386,21 @@ function setupDashboardEventListeners() {
   // SOS ALERT BUTTON CLICK HANDLER
   document.getElementById('sosBtn').addEventListener('click', triggerEmergencySOS);
 
-  document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
-    if (!auth.currentUser) return;
-    const confirmDelete = confirm("⚠️ Are you sure you want to permanently delete your SathChalo profile? This will also remove your travel posts and joined entries from MongoDB Atlas.");
+  const deleteBtn = document.getElementById('deleteAccountBtn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      if (!auth.currentUser) return;
+      const confirmDelete = confirm("⚠️ Are you sure you want to permanently delete your SathChalo profile? This will also remove your travel posts and joined entries from MongoDB Atlas.");
 
-    if (confirmDelete) {
-      const u = auth.currentUser;
-      closeModal('profileModal');
-      await auth.deleteAccount(u.id);
-      showToast("🗑️ Profile and travel posts deleted permanently.");
-      checkAuthScreenState();
-    }
-  });
+      if (confirmDelete) {
+        const u = auth.currentUser;
+        closeModal('profileModal');
+        await auth.deleteAccount(u.id);
+        showToast("🗑️ Profile and travel posts deleted permanently.");
+        checkAuthScreenState();
+      }
+    });
+  }
 
   document.getElementById('themeToggleBtn').addEventListener('click', () => {
     const cur = document.documentElement.getAttribute('data-theme');
