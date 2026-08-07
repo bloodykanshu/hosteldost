@@ -123,19 +123,30 @@ class HostelBuddyStore {
       const res = await fetch(`${API_BASE}/requests`);
       if (res.ok) {
         const data = await res.json();
-        this.requests = data.map(item => ({
-          ...item,
-          id: item._id || item.id,
-          joinedUsers: item.joinedUsers || [],
-          genderFilter: item.genderFilter || 'Any Gender',
-          fare: Math.min(Math.max(0, Number(item.fare) || 0), 10000),
-          spots: Math.min(Math.max(0, Number(item.spots) || 0), 10)
-        }));
+        this.requests = data.map(item => {
+          const reqId = String(item._id || item.id || `req_${Math.random()}`);
+          return {
+            ...item,
+            id: reqId,
+            _id: reqId,
+            joinedUsers: item.joinedUsers || [],
+            genderFilter: item.genderFilter || 'Any Gender',
+            fare: Math.min(Math.max(0, Number(item.fare) || 0), 10000),
+            spots: Math.min(Math.max(0, Number(item.spots) || 0), 10)
+          };
+        });
       }
     } catch (err) {
       // Fallback to local storage if API is starting up
       this.requests = JSON.parse(localStorage.getItem('sathchalo_real_requests') || localStorage.getItem('hostelbuddiieess_real_requests') || '[]');
     }
+  }
+
+  hasUserJoined(reqId, user) {
+    if (!user || !reqId) return false;
+    const reqItem = this.requests.find(r => String(r.id || r._id) === String(reqId));
+    if (!reqItem) return false;
+    return (reqItem.joinedUsers || []).some(u => u.userId === user.id || (u.name === user.name && u.room === user.room));
   }
 
   saveBookmarks() {
@@ -857,13 +868,16 @@ function canHostModifyTrip(req) {
 }
 
 function openDetailModal(reqId) {
-  const req = store.requests.find(r => r.id === reqId || r._id === reqId);
+  if (!reqId) return;
+
+  const targetReqId = String(reqId);
+  const req = store.requests.find(r => String(r.id || r._id) === targetReqId);
   if (!req) return;
 
   const modalTitle = document.getElementById('modalTripTitle');
   const modalBody = document.getElementById('modalTripBody');
   const curUser = auth.currentUser;
-  const hasJoined = curUser ? store.hasUserJoined(req.id, curUser) : false;
+  const hasJoined = curUser ? store.hasUserJoined(targetReqId, curUser) : false;
   const joinedList = req.joinedUsers || [];
 
   // Determine if current logged-in user is the Host of this trip
