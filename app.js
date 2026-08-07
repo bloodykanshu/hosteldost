@@ -669,7 +669,8 @@ function getGenderBadgeHTML(genderFilter) {
 }
 
 function createCardHTML(req) {
-  const isSaved = store.savedIds.has(req.id);
+  const reqId = String(req.id || req._id || '');
+  const isSaved = store.savedIds.has(reqId);
   const curUser = auth.currentUser;
   const joinedList = req.joinedUsers || [];
   const hasJoined = curUser && joinedList.some(u => u.userId === curUser.id || (u.name === curUser.name && u.room === curUser.room));
@@ -682,14 +683,14 @@ function createCardHTML(req) {
   const coverImg = getCoverImageForReq(req);
 
   return `
-    <article class="companion-card" data-id="${req.id}">
+    <article class="companion-card" data-id="${reqId}">
       <div class="card-header-banner" style="background-image: url('${coverImg}');">
         <div class="card-header-overlay"></div>
         <div style="position:relative; z-index:2; display:flex; gap:0.4rem; flex-wrap:wrap;">
           <div class="category-tag-badge">${req.category}</div>
           ${genderBadge}
         </div>
-        <button class="bookmark-btn ${isSaved ? 'active' : ''}" data-id="${req.id}" title="${isSaved ? 'Bookmark' : 'Save'}">
+        <button class="bookmark-btn ${isSaved ? 'active' : ''}" data-id="${reqId}" title="${isSaved ? 'Bookmark' : 'Save'}">
           <i class="fa-${isSaved ? 'solid' : 'regular'} fa-bookmark"></i>
         </button>
       </div>
@@ -714,7 +715,7 @@ function createCardHTML(req) {
 
         <div class="card-footer" style="margin-top:0.75rem;">
           <div class="spots-badge">${req.spots > 0 ? `${req.spots} spots left` : '🔴 Full'} • ₹${req.fare} share</div>
-          <button class="btn-join-card viewDetailBtn" data-id="${req.id}">
+          <button class="btn-join-card viewDetailBtn" data-id="${reqId}">
             ${hasJoined ? '✅ Joined (View)' : 'View & Join'}
           </button>
         </div>
@@ -735,7 +736,19 @@ function attachCardEvents(parent) {
   });
 
   parent.querySelectorAll('.viewDetailBtn').forEach(btn => {
-    btn.addEventListener('click', () => openDetailModal(btn.dataset.id));
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const reqId = btn.dataset.id;
+      if (reqId) openDetailModal(reqId);
+    });
+  });
+
+  parent.querySelectorAll('.companion-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.bookmark-btn')) return;
+      const reqId = card.dataset.id;
+      if (reqId) openDetailModal(reqId);
+    });
   });
 }
 
