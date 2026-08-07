@@ -177,7 +177,7 @@ app.get('/api/requests', async (req, res) => {
   }
 });
 
-// POST /api/requests
+// POST /api/requests - Post new travel plan
 app.post('/api/requests', async (req, res) => {
   try {
     const { pickup, destination, category, time, mode, genderFilter, spots, fare, hostName, room, contact, description, userId } = req.body;
@@ -214,6 +214,66 @@ app.post('/api/requests', async (req, res) => {
     res.status(201).json({ message: 'Travel request posted to MongoDB Atlas!', request: responseObj });
   } catch (error) {
     res.status(500).json({ message: 'Error creating travel request.', error: error.message });
+  }
+});
+
+// PUT /api/requests/:id - Host edits a travel request
+app.put('/api/requests/:id', async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const { pickup, destination, category, time, mode, genderFilter, spots, fare, description, userId } = req.body;
+
+    const reqItem = await Request.findById(requestId);
+    if (!reqItem) {
+      return res.status(404).json({ message: 'Travel request not found.' });
+    }
+
+    if (userId && reqItem.userId && reqItem.userId !== userId) {
+      return res.status(403).json({ message: 'Only the host can edit this travel request.' });
+    }
+
+    const sanitizedFare = Math.min(Math.max(0, Number(fare) || 0), 10000);
+    const sanitizedSpots = Math.min(Math.max(1, Number(spots) || 1), 10);
+    const coverImage = DEFAULT_COVERS[category] || reqItem.coverImage;
+
+    reqItem.pickup = pickup || reqItem.pickup || 'Hostel Gate';
+    reqItem.destination = destination || reqItem.destination;
+    reqItem.category = category || reqItem.category;
+    reqItem.time = time || reqItem.time;
+    reqItem.mode = mode || reqItem.mode;
+    reqItem.genderFilter = genderFilter || reqItem.genderFilter;
+    reqItem.spots = sanitizedSpots;
+    reqItem.fare = sanitizedFare;
+    reqItem.description = description || reqItem.description;
+    reqItem.coverImage = coverImage;
+
+    await reqItem.save();
+
+    res.json({ message: 'Travel plan updated successfully!', request: reqItem });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating travel request.', error: error.message });
+  }
+});
+
+// DELETE /api/requests/:id - Host deletes a travel request
+app.delete('/api/requests/:id', async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const { userId } = req.body || {};
+
+    const reqItem = await Request.findById(requestId);
+    if (!reqItem) {
+      return res.status(404).json({ message: 'Travel request not found.' });
+    }
+
+    if (userId && reqItem.userId && reqItem.userId !== userId) {
+      return res.status(403).json({ message: 'Only the host can delete this travel request.' });
+    }
+
+    await Request.findByIdAndDelete(requestId);
+    res.json({ message: 'Travel request deleted successfully!' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting travel request.', error: error.message });
   }
 });
 

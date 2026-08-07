@@ -366,6 +366,96 @@
     </div>
   </div>
 
+  <!-- EDIT TRIP MODAL -->
+  <div class="modal-overlay" id="editTripModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square" style="color:var(--accent-purple);"></i> Edit Travel Plan</h3>
+        <button class="close-modal-btn closeModal" data-modal="editTripModal">&times;</button>
+      </div>
+      <form id="editTripForm" class="modal-body">
+        <input type="hidden" id="editTripId">
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="editPickup">Leaving From (Pickup Point)</label>
+            <input type="text" id="editPickup" placeholder="e.g. Block A Gate" required>
+          </div>
+          <div class="form-group half">
+            <label for="editDestination">Where are you going?</label>
+            <input type="text" id="editDestination" placeholder="e.g. Phoenix Mall, Station" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="editCategory">Category</label>
+            <select id="editCategory" required>
+              <option value="✈️ Transit & Airport">✈️ Transit & Airport</option>
+              <option value="🛍️ Malls & Shopping">🛍️ Malls & Shopping</option>
+              <option value="🍔 Cafes & Food">🍔 Cafes & Food</option>
+              <option value="🎬 Movies & Outing">🎬 Movies & Outing</option>
+              <option value="📚 College & Exams">📚 College & Exams</option>
+              <option value="🏥 Medical & Urgent">🏥 Medical & Urgent</option>
+            </select>
+          </div>
+
+          <div class="form-group half">
+            <label for="editMode">Mode of Travel</label>
+            <select id="editMode" required>
+              <option value="Cab / Auto Share">Cab / Auto Share</option>
+              <option value="Bike / Scooty">Bike / Scooty</option>
+              <option value="Bus / Metro">Bus / Metro</option>
+              <option value="Walking Group">Walking Group</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editGenderFilter">Group Gender Preference</label>
+          <select id="editGenderFilter" required>
+            <option value="Any Gender">🤝 Open to Any Gender</option>
+            <option value="Girls Only">👩 Girls Only Group</option>
+            <option value="Boys Only">👨 Boys Only Group</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="editDate"><i class="fa-regular fa-calendar"></i> Departure Date</label>
+            <input type="date" id="editDate" required>
+          </div>
+
+          <div class="form-group half">
+            <label for="editTime"><i class="fa-regular fa-clock"></i> Departure Time</label>
+            <input type="time" id="editTime" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="editSpots">Available Spots</label>
+            <input type="number" id="editSpots" min="1" max="10" required>
+          </div>
+
+          <div class="form-group half">
+            <label for="editFare">Estimated Share per Person (₹)</label>
+            <input type="number" id="editFare" min="0" max="10000" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editDescription">Plan Description & Meeting Spot</label>
+          <textarea id="editDescription" rows="3" required></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary closeModal" data-modal="editTripModal">Cancel</button>
+          <button type="submit" class="btn-primary-purple"><i class="fa-solid fa-check"></i> Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- TRIP DETAIL MODAL -->
   <div class="modal-overlay" id="tripDetailModal">
     <div class="modal-card">

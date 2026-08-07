@@ -232,6 +232,52 @@ class HostelBuddyStore {
     }
   }
 
+  async updateRequest(reqId, updatedData) {
+    const target = this.requests.find(r => String(r.id) === String(reqId) || String(r._id) === String(reqId));
+    if (!target) throw new Error('Request not found');
+
+    try {
+      const res = await fetch(`${API_BASE}/requests/${reqId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to update request');
+
+      Object.assign(target, data.request);
+      return target;
+    } catch (err) {
+      if (err.message && !err.message.includes('fetch')) throw err;
+
+      // Fallback local update
+      Object.assign(target, updatedData);
+      localStorage.setItem('sathchalo_real_requests', JSON.stringify(this.requests));
+      return target;
+    }
+  }
+
+  async deleteRequest(reqId, userId) {
+    try {
+      const res = await fetch(`${API_BASE}/requests/${reqId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete request');
+    } catch (err) {
+      if (err.message && !err.message.includes('fetch')) throw err;
+    }
+
+    this.requests = this.requests.filter(r => String(r.id) !== String(reqId) && String(r._id) !== String(reqId));
+    this.userPostIds.delete(reqId);
+    this.savedIds.delete(reqId);
+    this.saveUserPosts();
+    this.saveBookmarks();
+    localStorage.setItem('sathchalo_real_requests', JSON.stringify(this.requests));
+  }
+
   getFilteredRequests() {
     return this.requests.filter(req => {
       if (this.activeTab === 'my-posts' && !this.userPostIds.has(req.id) && !this.savedIds.has(req.id)) {
@@ -492,7 +538,11 @@ function setupDashboardEventListeners() {
     renderRequests();
   });
 
-  document.getElementById('postTripForm').addEventListener('submit', handlePostSubmit);
+  const postTripForm = document.getElementById('postTripForm');
+  if (postTripForm) postTripForm.addEventListener('submit', handlePostSubmit);
+
+  const editTripForm = document.getElementById('editTripForm');
+  if (editTripForm) editTripForm.addEventListener('submit', handleEditSubmit);
 
   document.querySelectorAll('.closeModal').forEach(btn => {
     btn.addEventListener('click', () => closeModal(btn.dataset.modal));
@@ -799,8 +849,16 @@ function openDetailModal(reqId) {
       <span class="spots-badge" id="modalSpotsBadge">${req.spots > 0 ? `${req.spots} spots remaining` : '🔴 Full'}</span>
     </div>
 
-    <div style="display:flex; gap:1rem; justify-content:flex-end;">
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:flex-end;">
       <button class="btn-secondary closeModal" data-modal="tripDetailModal">Close</button>
+      ${isHost ? `
+        <button class="btn-secondary" id="editTripBtn" style="background:rgba(139,92,246,0.15); color:var(--accent-purple); border-color:rgba(139,92,246,0.35); font-weight:700;">
+          <i class="fa-solid fa-pen-to-square"></i> Edit
+        </button>
+        <button class="btn-secondary" id="deleteTripBtn" style="background:rgba(239,68,68,0.15); color:#EF4444; border-color:rgba(239,68,68,0.35); font-weight:700;">
+          <i class="fa-solid fa-trash-can"></i> Delete
+        </button>
+      ` : ''}
       <button class="btn-secondary" id="chatHostFromDetailBtn" style="background:#25D366; color:#fff; border-color:#25D366; font-weight:700;">
         <i class="fa-brands fa-whatsapp" style="font-size:1.1rem;"></i> Chat Host
       </button>
@@ -815,6 +873,28 @@ function openDetailModal(reqId) {
   document.querySelectorAll('.closeModal').forEach(btn => {
     btn.addEventListener('click', () => closeModal(btn.dataset.modal));
   });
+
+  const editTripBtn = document.getElementById('editTripBtn');
+  if (editTripBtn) {
+    editTripBtn.addEventListener('click', () => openEditTripModal(req));
+  }
+
+  const deleteTripBtn = document.getElementById('deleteTripBtn');
+  if (deleteTripBtn) {
+    deleteTripBtn.addEventListener('click', async () => {
+      const confirmDelete = confirm(`⚠️ Are you sure you want to permanently delete your travel plan to "${req.destination}"?`);
+      if (confirmDelete) {
+        try {
+          await store.deleteRequest(req.id || req._id, curUser ? curUser.id : null);
+          showToast(`🗑️ Travel plan to ${req.destination} deleted successfully.`);
+          closeModal('tripDetailModal');
+          renderRequests();
+        } catch (err) {
+          showToast(`⚠️ ${err.message}`);
+        }
+      }
+    });
+  }
 
   // Attach host remove companion button event listeners
   document.querySelectorAll('.btn-remove-companion').forEach(btn => {
@@ -908,6 +988,72 @@ async function handlePostSubmit(e) {
   closeModal('postTripModal');
   document.getElementById('postTripForm').reset();
   showToast(`🎉 Travel request to ${destination} (${genderFilter}) published to MongoDB Atlas!`);
+}
+
+function openEditTripModal(req) {
+  if (!req) return;
+
+  document.getElementById('editTripId').value = req.id || req._id;
+  document.getElementById('editPickup').value = req.pickup || 'Hostel Gate';
+  document.getElementById('editDestination').value = req.destination || '';
+  document.getElementById('editCategory').value = req.category || '✈️ Transit & Airport';
+  document.getElementById('editMode').value = req.mode || 'Cab / Auto Share';
+  document.getElementById('editGenderFilter').value = req.genderFilter || 'Any Gender';
+  document.getElementById('editSpots').value = req.spots || 3;
+  document.getElementById('editFare').value = req.fare || 50;
+  document.getElementById('editDescription').value = req.description || '';
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('editDate').value = todayStr;
+  const now = new Date();
+  const hrs = String(now.getHours()).padStart(2, '0');
+  const mins = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('editTime').value = `${hrs}:${mins}`;
+
+  closeModal('tripDetailModal');
+  openModal('editTripModal');
+}
+
+async function handleEditSubmit(e) {
+  e.preventDefault();
+  if (!auth.currentUser) return;
+
+  const reqId = document.getElementById('editTripId').value;
+  const pickup = document.getElementById('editPickup').value.trim();
+  const destination = document.getElementById('editDestination').value.trim();
+  const category = document.getElementById('editCategory').value;
+  const mode = document.getElementById('editMode').value;
+  const genderFilter = document.getElementById('editGenderFilter').value;
+  const rawDate = document.getElementById('editDate').value;
+  const rawTime = document.getElementById('editTime').value;
+  const formattedTime = formatDepartureDateTime(rawDate, rawTime);
+  const spots = parseInt(document.getElementById('editSpots').value);
+  const fare = parseInt(document.getElementById('editFare').value);
+  const description = document.getElementById('editDescription').value.trim();
+
+  const user = auth.currentUser;
+
+  const updatedData = {
+    pickup: pickup || 'Hostel Gate',
+    destination,
+    category,
+    time: formattedTime,
+    mode,
+    genderFilter,
+    spots,
+    fare,
+    description,
+    userId: user.id
+  };
+
+  try {
+    await store.updateRequest(reqId, updatedData);
+    showToast(`✏️ Travel plan to ${destination} updated successfully!`);
+    closeModal('editTripModal');
+    renderRequests();
+  } catch (err) {
+    showToast(`⚠️ ${err.message}`);
+  }
 }
 
 function openChatModal(hostName, room) {
