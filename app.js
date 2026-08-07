@@ -164,7 +164,7 @@ class HostelBuddyStore {
   }
 
   async joinRequest(reqId, user) {
-    const target = this.requests.find(r => r.id === reqId);
+    const target = this.requests.find(r => r.id === reqId || r._id === reqId);
     if (!target) throw new Error('Request not found');
 
     if (target.spots <= 0) throw new Error('No remaining spots on this request.');
@@ -193,6 +193,40 @@ class HostelBuddyStore {
       target.spots = Math.max(0, target.spots - 1);
       target.joinedUsers = target.joinedUsers || [];
       target.joinedUsers.push({ userId: user.id, name: user.name, room: user.room, joinedAt: new Date() });
+      localStorage.setItem('sathchalo_real_requests', JSON.stringify(this.requests));
+      return target;
+    }
+  }
+
+  async removeCompanion(reqId, targetUserId, targetName, hostUserId) {
+    const target = this.requests.find(r => String(r.id) === String(reqId) || String(r._id) === String(reqId));
+    if (!target) throw new Error('Request not found');
+
+    try {
+      const res = await fetch(`${API_BASE}/requests/${reqId}/remove-companion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId, targetName, hostUserId })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to remove companion');
+
+      target.spots = data.request.spots;
+      target.joinedUsers = data.request.joinedUsers || [];
+      return data.request;
+    } catch (err) {
+      if (err.message && !err.message.includes('fetch')) throw err;
+
+      // Fallback local removal
+      const initialCount = (target.joinedUsers || []).length;
+      target.joinedUsers = (target.joinedUsers || []).filter(u => {
+        if (targetUserId && u.userId) return u.userId !== targetUserId;
+        return u.name !== targetName;
+      });
+      if (target.joinedUsers.length < initialCount) {
+        target.spots = Math.min(10, target.spots + 1);
+      }
       localStorage.setItem('sathchalo_real_requests', JSON.stringify(this.requests));
       return target;
     }
@@ -605,7 +639,7 @@ function closeModal(modalId) {
 }
 
 function openDetailModal(reqId) {
-  const req = store.requests.find(r => r.id === reqId);
+  const req = store.requests.find(r => r.id === reqId || r._id === reqId);
   if (!req) return;
 
   const modalTitle = document.getElementById('modalTripTitle');
@@ -614,13 +648,26 @@ function openDetailModal(reqId) {
   const joinedList = req.joinedUsers || [];
   const hasJoined = curUser && joinedList.some(u => u.userId === curUser.id || (u.name === curUser.name && u.room === curUser.room));
 
+  // Determine if current logged-in user is the Host of this trip
+  const isHost = curUser && (req.userId === curUser.id || (req.hostName === curUser.name && req.room === curUser.room));
+
   modalTitle.innerHTML = `<i class="fa-solid fa-location-dot" style="color:var(--accent-purple);"></i> ${req.destination}`;
 
   const joinedBuddiesListHTML = joinedList.length > 0
     ? `<div style="background:var(--bg-surface); padding:0.85rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1rem;">
-        <h5 style="margin-bottom:0.4rem; color:var(--accent-purple);"><i class="fa-solid fa-users"></i> Joined Companions (${joinedList.length}):</h5>
-        <ul style="padding-left:1.2rem; margin:0; color:var(--text-secondary); font-size:0.88rem;">
-          ${joinedList.map(u => `<li><strong>${u.name}</strong> (${u.room})</li>`).join('')}
+        <h5 style="margin-bottom:0.5rem; color:var(--accent-purple); display:flex; align-items:center; justify-space-between;">
+          <span><i class="fa-solid fa-users"></i> Joined Companions (${joinedList.length}):</span>
+          ${isHost ? '<span style="font-size:0.75rem; color:var(--accent-purple); font-weight:600;"><i class="fa-solid fa-crown"></i> You are Host</span>' : ''}
+        </h5>
+        <ul style="padding-left:0; margin:0; list-style:none; display:flex; flex-direction:column; gap:0.45rem;">
+          ${joinedList.map(u => `
+            <li style="display:flex; align-items:center; justify-content:space-between; padding:0.45rem 0.75rem; background:var(--bg-surface-elevated); border-radius:var(--radius-md); border:1px solid var(--border-color); font-size:0.88rem; color:var(--text-primary);">
+              <div>
+                <strong>${u.name}</strong> <span style="font-size:0.78rem; color:var(--text-muted);">(${u.room})</span>
+              </div>
+              ${isHost ? `<button class="btn-remove-companion" data-req-id="${req.id || req._id}" data-user-id="${u.userId || ''}" data-user-name="${u.name}" style="background:rgba(239, 68, 68, 0.15); color:#EF4444; border:1px solid rgba(239, 68, 68, 0.35); padding:0.25rem 0.65rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer; transition:all 0.2s;"><i class="fa-solid fa-user-minus"></i> Remove</button>` : ''}
+            </li>
+          `).join('')}
         </ul>
        </div>`
     : `<div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;"><i class="fa-solid fa-info-circle"></i> No companions have joined this trip yet.</div>`;
@@ -679,6 +726,28 @@ function openDetailModal(reqId) {
     btn.addEventListener('click', () => closeModal(btn.dataset.modal));
   });
 
+  // Attach host remove companion button event listeners
+  document.querySelectorAll('.btn-remove-companion').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const rId = btn.dataset.reqId;
+      const targetUid = btn.dataset.userId;
+      const targetUname = btn.dataset.userName;
+
+      const confirmRemove = confirm(`⚠️ Are you sure you want to remove ${targetUname} from your travel request?`);
+      if (confirmRemove) {
+        try {
+          await store.removeCompanion(rId, targetUid, targetUname, curUser ? curUser.id : null);
+          showToast(`🗑️ ${targetUname} has been removed from your trip. Spots freed +1!`);
+          closeModal('tripDetailModal');
+          renderRequests();
+        } catch (err) {
+          showToast(`⚠️ ${err.message}`);
+        }
+      }
+    });
+  });
+
   document.getElementById('chatHostFromDetailBtn').addEventListener('click', () => {
     let rawContact = req.contact || '';
     let digits = rawContact.replace(/\D/g, '');
@@ -732,8 +801,8 @@ async function handlePostSubmit(e) {
     time,
     mode,
     genderFilter,
-    spots: Math.min(Math.max(1, spots || 1), 10),
-    fare: Math.min(Math.max(0, fare || 0), 10000),
+    spots,
+    fare,
     hostName: user.name,
     room: user.room,
     contact: user.phone || user.email,
