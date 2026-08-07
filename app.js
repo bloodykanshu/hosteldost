@@ -624,6 +624,8 @@ function attachCardEvents(parent) {
       renderRequests();
       showToast(store.savedIds.has(reqId) ? 'Request bookmarked!' : 'Removed from bookmarks');
     });
+  });
+
   parent.querySelectorAll('.viewDetailBtn').forEach(btn => {
     btn.addEventListener('click', () => openDetailModal(btn.dataset.id));
   });
