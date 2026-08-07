@@ -320,7 +320,12 @@ input[type="time"] {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  flex-wrap: wrap;
+}
+
+.header-top-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .brand-logo {
@@ -349,11 +354,64 @@ input[type="time"] {
   white-space: nowrap;
 }
 
-.header-right-actions {
+.header-user-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.header-bottom-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .header-top-row {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .header-bottom-actions {
+    width: 100%;
+  }
+
+  .header-bottom-actions .btn-sos-red {
+    flex: 1;
+    justify-content: center;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .header-bottom-actions .btn-primary-purple {
+    flex: 1.2;
+    justify-content: center;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  .user-meta {
+    display: flex;
+    flex-direction: column;
+    max-width: 100px;
+  }
+
+  .user-name {
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .user-room {
+    font-size: 0.68rem;
+  }
 }
 
 .user-profile-pill {

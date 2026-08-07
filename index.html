@@ -115,38 +115,41 @@
     <!-- HEADER -->
     <header class="main-header">
       <div class="header-container">
-        <div class="brand-logo">
-          <div class="brand-logo-icon"><i class="fa-solid fa-users-rays"></i></div>
-          <div class="brand-title-group">
-            <h1 class="brand-title">SathChalo</h1>
-            <span class="brand-subtitle">Hostel Companion & Ride Share</span>
-          </div>
-        </div>
-
-        <div class="header-right-actions">
-          <!-- SOS EMERGENCY BUTTON -->
-          <button class="btn-sos-red" id="sosBtn" title="🚨 Trigger Emergency WhatsApp Alert to Your Registered Contact">
-            <i class="fa-solid fa-triangle-exclamation"></i> 🚨 SOS ALERT
-          </button>
-
-          <div class="user-profile-pill" id="profilePillBtn" style="cursor:pointer;" title="Click to View Profile & Settings">
-            <div class="avatar-circle" id="userAvatarText">AA</div>
-            <div class="user-meta">
-              <span class="user-name" id="userNameText">Aalekh <i class="fa-solid fa-chevron-down" style="font-size:0.65rem; color:var(--text-muted);"></i></span>
-              <span class="user-room" id="userRoomText">Block A - 102</span>
+        <div class="header-top-row">
+          <div class="brand-logo">
+            <div class="brand-logo-icon"><i class="fa-solid fa-users-rays"></i></div>
+            <div class="brand-title-group">
+              <h1 class="brand-title">SathChalo</h1>
+              <span class="brand-subtitle">Hostel Companion</span>
             </div>
           </div>
 
-          <button class="icon-circle-btn" id="themeToggleBtn" title="Toggle Light/Dark Theme">
-            <i class="fa-solid fa-moon"></i>
-          </button>
-          
-          <button class="icon-circle-btn" id="safetyBtn" title="Safety Guidelines">
-            <i class="fa-solid fa-shield-halved"></i>
-          </button>
+          <div class="header-user-actions">
+            <button class="icon-circle-btn" id="themeToggleBtn" title="Toggle Light/Dark Theme">
+              <i class="fa-solid fa-moon"></i>
+            </button>
+            
+            <button class="icon-circle-btn" id="safetyBtn" title="Safety Guidelines">
+              <i class="fa-solid fa-shield-halved"></i>
+            </button>
 
-          <button class="icon-circle-btn" id="logoutBtn" title="Sign Out">
-            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <button class="icon-circle-btn" id="logoutBtn" title="Sign Out">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </button>
+
+            <div class="user-profile-pill" id="profilePillBtn" style="cursor:pointer;" title="Click to View Profile & Settings">
+              <div class="avatar-circle" id="userAvatarText">AA</div>
+              <div class="user-meta">
+                <span class="user-name" id="userNameText">Aalekh <i class="fa-solid fa-chevron-down" style="font-size:0.65rem; color:var(--text-muted);"></i></span>
+                <span class="user-room" id="userRoomText">Block A - 102</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-bottom-actions">
+          <button class="btn-sos-red" id="sosBtn" title="🚨 Trigger Emergency WhatsApp Alert to Your Registered Contact">
+            <i class="fa-solid fa-triangle-exclamation"></i> 🚨 SOS ALERT
           </button>
 
           <button class="btn-primary-purple" id="openPostTripBtn">
