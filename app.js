@@ -6,6 +6,25 @@ const API_BASE = window.location.origin.includes('localhost')
   ? 'http://localhost:5000/api'
   : `${window.location.origin}/api`;
 
+const DEFAULT_COVERS = {
+  '✈️ Transit & Airport': 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&auto=format&fit=crop',
+  '🛍️ Malls & Shopping': 'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&auto=format&fit=crop',
+  '🍔 Cafes & Food': 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop',
+  '🎬 Movies & Outing': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop',
+  '📚 College & Exams': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop',
+  '🏥 Medical & Urgent': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&auto=format&fit=crop'
+};
+
+function getCoverImageForReq(req) {
+  if (req && req.category && DEFAULT_COVERS[req.category]) {
+    return DEFAULT_COVERS[req.category];
+  }
+  if (req && req.coverImage && req.coverImage.startsWith('http')) {
+    return req.coverImage;
+  }
+  return 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&auto=format&fit=crop';
+}
+
 class HostelBuddyAuth {
   constructor() {
     this.currentUser = JSON.parse(localStorage.getItem('sathchalo_current_user') || localStorage.getItem('hostelbuddiieess_current_user') || localStorage.getItem('hostelbuddy_current_user') || 'null');
@@ -660,10 +679,11 @@ function createCardHTML(req) {
     : '';
 
   const genderBadge = getGenderBadgeHTML(req.genderFilter);
+  const coverImg = getCoverImageForReq(req);
 
   return `
     <article class="companion-card" data-id="${req.id}">
-      <div class="card-header-banner" style="background-image: url('${req.coverImage}');">
+      <div class="card-header-banner" style="background-image: url('${coverImg}');">
         <div class="card-header-overlay"></div>
         <div style="position:relative; z-index:2; display:flex; gap:0.4rem; flex-wrap:wrap;">
           <div class="category-tag-badge">${req.category}</div>
@@ -859,10 +879,11 @@ function openDetailModal(reqId) {
     : `<div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;"><i class="fa-solid fa-info-circle"></i> No companions have joined this trip yet.</div>`;
 
   const genderBadge = getGenderBadgeHTML(req.genderFilter);
+  const coverImg = getCoverImageForReq(req);
 
   modalBody.innerHTML = `
-    <div style="margin-bottom: 1.25rem; position: relative; border-radius: var(--radius-md); overflow: hidden; height: 160px;">
-      <img src="${req.coverImage}" style="width:100%; height:100%; object-fit:cover;">
+    <div style="margin-bottom: 1.25rem; position: relative; border-radius: var(--radius-md); overflow: hidden; height: 160px; background: var(--bg-surface-elevated);">
+      <img src="${coverImg}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&auto=format&fit=crop';" style="width:100%; height:100%; object-fit:cover;">
       <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top, rgba(0,0,0,0.85), transparent); padding: 1rem; color:#fff; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <span class="category-tag-badge">${req.category} • ${req.mode}</span>
         ${genderBadge}

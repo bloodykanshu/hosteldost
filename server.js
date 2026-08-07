@@ -31,12 +31,12 @@ app.get('/api/health', (req, res) => {
 });
 
 const DEFAULT_COVERS = {
-  '✈️ Transit & Airport': 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop',
-  '🛍️ Malls & Shopping': 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&auto=format&fit=crop',
-  '🍔 Cafes & Food': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop',
-  '🎬 Movies & Outing': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop',
-  '📚 College & Exams': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop',
-  '🏥 Medical & Urgent': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop'
+  '✈️ Transit & Airport': 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&auto=format&fit=crop',
+  '🛍️ Malls & Shopping': 'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&auto=format&fit=crop',
+  '🍔 Cafes & Food': 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop',
+  '🎬 Movies & Outing': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop',
+  '📚 College & Exams': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop',
+  '🏥 Medical & Urgent': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&auto=format&fit=crop'
 };
 
 // 24-Hour Edit & Delete Lock Rule Verification
@@ -195,9 +195,7 @@ app.get('/api/requests', async (req, res) => {
     const requests = await Request.find().sort({ createdAt: -1 });
     const sanitizedRequests = requests.map(r => {
       const obj = r.toObject();
-      const cover = obj.coverImage && obj.coverImage.startsWith('http')
-        ? obj.coverImage
-        : (DEFAULT_COVERS[obj.category] || 'https://images.unsplash.com/photo-1515165562839-97840135d070?w=600&auto=format&fit=crop');
+      const cover = DEFAULT_COVERS[obj.category] || (obj.coverImage && obj.coverImage.startsWith('http') ? obj.coverImage : 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&auto=format&fit=crop');
 
       return {
         ...obj,
