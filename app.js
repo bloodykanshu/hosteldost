@@ -355,6 +355,13 @@ function setupAuthEventListeners() {
     });
   }
 
+  const regRoomInput = document.getElementById('regRoom');
+  if (regRoomInput) {
+    regRoomInput.addEventListener('input', () => {
+      regRoomInput.value = regRoomInput.value.replace(/\D/g, '');
+    });
+  }
+
   if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -374,6 +381,11 @@ function setupAuthEventListeners() {
 
       if (emergencyPhone.length < 10) {
         showToast('⚠️ Please enter a valid 10-digit emergency contact number.');
+        return;
+      }
+
+      if (!/^\d+$/.test(room)) {
+        showToast('⚠️ Room number must contain numeric digits only (e.g. 102).');
         return;
       }
 

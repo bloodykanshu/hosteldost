@@ -87,8 +87,8 @@
             </select>
           </div>
           <div class="form-group half">
-            <label for="regRoom">Room No.</label>
-            <input type="text" id="regRoom" placeholder="e.g. 102" required>
+            <label for="regRoom">Room No. (Numeric Only)</label>
+            <input type="number" id="regRoom" placeholder="e.g. 102" min="1" max="9999" pattern="[0-9]*" inputmode="numeric" required>
           </div>
         </div>
 
