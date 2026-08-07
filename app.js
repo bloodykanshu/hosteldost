@@ -440,6 +440,13 @@ function setupDashboardEventListeners() {
     });
   }
 
+  const modalSafetyBtn = document.getElementById('modalSafetyBtn');
+  if (modalSafetyBtn) {
+    modalSafetyBtn.addEventListener('click', () => {
+      showToast("🛡️ Safety Guidelines: Always verify room numbers and coordinate via room chat.");
+    });
+  }
+
   document.querySelectorAll('.tab-pill-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-pill-btn').forEach(b => b.classList.remove('active'));

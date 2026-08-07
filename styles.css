@@ -396,21 +396,31 @@ input[type="time"] {
     font-size: 0.82rem;
   }
 
+  .user-profile-pill {
+    padding: 0.2rem 0.5rem;
+    max-width: 150px;
+    flex-shrink: 1;
+  }
+
   .user-meta {
     display: flex;
     flex-direction: column;
-    max-width: 100px;
+    max-width: 85px;
+    overflow: hidden;
   }
 
   .user-name {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .user-room {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
